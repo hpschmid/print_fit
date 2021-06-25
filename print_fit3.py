@@ -31,7 +31,7 @@ smooth_pow_print = 600 #
 smooth_pow_zonen = 30
 
 print_alles = 0 # show all records for debugging purposes
-print_csv   = 1 # generate .csv file with result
+print_csv   = 0 # generate .csv file with result
 plot_weg    = 1 # plot data vs. distance
 plot_time   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
