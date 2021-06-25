@@ -23,7 +23,7 @@ from operator import add
 ###################################### Settings ####################################################
 zonen = [0,138,149,160,170] # HF zone limits
 FTP   = 255
-raeder = ('MTB','2er','Poison','Leihrad') # Bike names
+raeder = ('MTB','2er','Poison','Sab','Leihrad') # Bike names
 #[0.81,0.9,0.94,1,1.03,1.07]
 #tbPow = np.multiply([0,0.53,0.71,0.86,1],float(FTP))
 tbPow = np.multiply([0,0.55,0.75,0.9,1.05],float(FTP)) # Power zones
@@ -31,7 +31,7 @@ smooth_pow_print = 600 #
 smooth_pow_zonen = 30
 
 print_alles = 0 # show all records for debugging purposes
-print_csv   = 0 # generate .csv file with result
+print_csv   = 1 # generate .csv file with result
 plot_weg    = 1 # plot data vs. distance
 plot_time   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
@@ -365,6 +365,7 @@ if hersteller == "srm":
 				bike = raeder[bike_id - 1]
 				id = bike_id
 
+# Bei Igpsport finde ich keinen Hinweise auf Radprofil, kann über Gewicht unterscheiden (alternativ Sensor-Id):
 elif hersteller == "igpsport":
 	totfile = FitFile('user.fit')
 	for totals in totfile.get_messages('bike_profile'):
@@ -392,16 +393,14 @@ elif hersteller == "bryton":
 			if (record_data.name == "unknown_7"): 
 				id = record_data.value
 				bike_id = id
-				bike = 'MTB'
+				bike = raeder[0]
 				if (id == 2):
 					bike_id = 3
-					bike = 'Poison'
 				elif (id == 0x10):
 					bike_id = 2
-					bike = '2er'
 				elif (id == 0x20):
 					bike_id = 4
-					bike = 'Leihrad'
+				bike = raeder[bike_id - 1]
 				#Beim Rider 450 ist 0x10 Rad 1 und 0x20 Rad 2, daher:
 				if id > 2:
 					id = id >> 4
@@ -421,7 +420,7 @@ elif hersteller == "bryton":
 				trip2_str = ('Trip2%d_km' % (id))
 				km[bike_id] = system[trip2_str]
 else:
-	print ('Hersteller nicht implementiert')
+	print ('Hersteller nicht implementiert, kann Odometer nicht lesen')
 
 kmstr = [' ;',' ;',' ;',' ;',' ;',' ;']
 kmstr[bike_id] = ("%s;" % str(km[bike_id]))
@@ -549,16 +548,16 @@ for i in range(0,runde):
 rstr = rstr.replace('.',',')
 rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
 
-print("Fuer die Tabelle: ")
+print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
 print(rstr)
 print(">")
 
 ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
 for i in range(0,runde):
 	ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
-ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;Kad;hm;tss;stress;MTB;2er_Rad;Poison;Sab;Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
+ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;Kad;hm;tss;stress;" + (((str(raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
 for i in range(0,runde):
-	ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;hm;max;")
+	ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
 if (print_csv == 1):
 	#csvdatei = ("%s.csv" % (startzeit.strftime("%y%m%d%H%M")))
@@ -713,7 +712,7 @@ if plot_time == 1:
 	plt.show()
 
 
-################# Nach Zeit mit Pausen:
+################# Nach Uhrzeit:
 
 if plot_pause == 1:
 	plt.xkcd()
