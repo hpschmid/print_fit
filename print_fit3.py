@@ -299,27 +299,27 @@ if runde > 0:
 		x_zw_start.append(x_rend[-1])
 		x_zw_end.append(x[-1])
 
-zh     = []
-zm     = []
-zs     = []
-v_zw   = []
-hf_zw  = []
-pow_zw = []
+zh     = [0]*zwischen
+zm     = [0]*zwischen
+zs     = [0]*zwischen
+v_zw   = [0]*zwischen
+hf_zw  = [0]*zwischen
+pow_zw = [0]*zwischen
 for i in range(0,zwischen):
-	v_zw.append(x_zw[i]/z_zw[i])
-	zh.append(np.floor(z_zw[i]/3600))
-	zm.append(np.floor((z_zw[i] - zh[-1]*3600)/60))
-	zs.append(z_zw[i] - zh[-1]*3600 - zm[-1]*60)
+	v_zw[i] = x_zw[i]/z_zw[i]
+	zh[i] = np.floor(z_zw[i]/3600)
+	zm[i] = np.floor((z_zw[i] - zh[-1]*3600)/60)
+	zs[i] = z_zw[i] - zh[-1]*3600 - zm[-1]*60
 	try:
 		hfz = np.array(hf[z_zw_start[i]:z_zw_end[i]])
 		hfz = list(filter(None,hfz))
-		hf_zw.append(sum(hfz)/len(hfz))
+		hf_zw[i] = sum(hfz)/len(hfz)
 	except:
 		print("Keine HF für Zwischenstrecke verfuegbar")
 	try:
 		pz = np.array(power[z_zw_start[i]:z_zw_end[i]])
 		pz = list(filter(None,pz))
-		pow_zw.append(sum(pz)/len(pz))
+		pow_zw[i] = sum(pz)/len(pz)
 	except:
 		print("Keine Leistung für Zwischenstrecke verfuegbar")
 
