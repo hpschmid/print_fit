@@ -104,6 +104,8 @@ for record in fitfile.get_messages('record'):
 			zs   = datetime_to_local(record_data.value)
 			temp = zs.second + zs.minute*60 + zs.hour*3600
 			try:
+				if temp < t[-1]:
+					temp = temp + 24*3600
 				t.append(temp)
 			except:
 				t = [temp]
