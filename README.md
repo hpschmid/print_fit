@@ -6,6 +6,7 @@ Author: Gerhard Schmid
 Requirements:
 Fitfileparser
 Tkinter
+Matplotlib
 
 Wie es funktioniert:
 

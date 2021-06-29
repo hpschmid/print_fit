@@ -45,7 +45,7 @@ def smooth(y, box_pts):
     y_smooth = np.convolve(y, box, mode='same')
     return y_smooth
 
-list_of_files = glob.glob('2*.fit') # * means all if need specific format then *.csv
+list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
 latest_file = max(list_of_files, key=os.path.getctime)
 print ("Neueste Ausfahrt: %s" % (latest_file))
 
@@ -234,7 +234,7 @@ for Laps in fitfile.get_messages('lap'):
 			rstrecken.append((record_data.value))
 		if record_data.name == "avg_speed":
 			ravspeed.append((record_data.value*3.6/1000))
-		if record_data.name == "total_moving_time":
+		if record_data.name == "total_timer_time":
 			rzeiten.append((record_data.value))
 		if record_data.name == "total_elapsed_time":
 			rgzeiten.append((record_data.value))
@@ -244,6 +244,8 @@ for Laps in fitfile.get_messages('lap'):
 				ravHR[-1] = 0
 		if record_data.name == "avg_power":
 			rpower.append((record_data.value))
+			if rpower[-1] == None:
+				rpower[-1] = 0
 		if record_data.name == "total_ascent":
 			ranstiege.append((record_data.value))
 		if record_data.name == "max_speed":
@@ -332,7 +334,7 @@ for Summary in fitfile.get_messages('session'):
 			strecke = record_data.value
 		if record_data.name == "avg_speed":
 			avspeed = record_data.value*3.6/1000
-		if record_data.name == "total_moving_time":
+		if record_data.name == "total_timer_time":
 			zeit = record_data.value
 		if record_data.name == "avg_heart_rate":
 			avHR = record_data.value
@@ -347,8 +349,9 @@ for Summary in fitfile.get_messages('session'):
 		if record_data.name == "total_calories":
 			kCal = record_data.value
 		if record_data.name == "total_work":
-			if record_data.value > 0:
-				kCal = record_data.value/1000
+			if (record_data.value != None):
+				if (record_data.value > 0):
+					kCal = record_data.value/1000
 		if record_data.name == "total_elapsed_time":
 			totalzeit = record_data.value
 		if record_data.name == "avg_cadence":
@@ -370,6 +373,9 @@ for file_id in fitfile.get_messages('file_id'):
 			print('Hersteller erkannt: %s' % (hersteller))
 
 km = [0,0,0,0,0]
+bike = "Default"
+id = 1
+bike_id = 1
 if hersteller == "srm":
 	for bike_profile in fitfile.get_messages('bike_profile'):
 		for record_data in bike_profile:
@@ -437,13 +443,20 @@ elif hersteller == "bryton":
 				fileObject.write(data)
 				fileObject.close()
 				import configparser
-				config = configparser.ConfigParser()		
-				config.read("System.ini")
+				config = configparser.ConfigParser()
+				config.read	("System.ini")
 				system = config['System']
-				trip2_str = ('Trip2%d_km' % (id))
+				trip2_str =('Trip2%d_km' % (id))
 				km[bike_id] = system[trip2_str]
+if hersteller == "garmin":
+	for Summary in fitfile.get_messages('session'):
+		for record_data in Summary:
+			if record_data.name == "unknown_110":
+				bike = record_data.value
+			if record_data.name == "unknown_178":
+				km[bike_id] = record_data.value
 else:
-	print ('Hersteller nicht implementiert, kann Odometer nicht lesen')
+	print('Hersteller nicht implementiert, kann Odometer nicht lesen')
 
 kmstr = [' ;',' ;',' ;',' ;',' ;',' ;']
 kmstr[bike_id] = ("%s;" % str(km[bike_id]))
