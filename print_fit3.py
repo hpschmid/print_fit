@@ -29,6 +29,7 @@ raeder = ('MTB','2er','Poison','Sab','Leihrad') # Bike names
 tbPow = np.multiply([0,0.55,0.75,0.9,1.05],float(FTP)) # Power zones
 smooth_pow_print = 600 # 
 smooth_pow_zonen = 30
+max_hf = 180 # for scaling the plots
 
 print_alles = 0 # show all records for debugging purposes
 print_csv   = 0 # generate .csv file with result
@@ -95,6 +96,8 @@ alt   = []
 altt  = []
 xalt  = []
 talt  = []
+T     = [] # Temperatur
+tT    = []
 # Get all data messages that are of type record
 for record in fitfile.get_messages('record'):
 
@@ -161,6 +164,9 @@ for record in fitfile.get_messages('record'):
 			    xalt.append((x[-1]))
 			except:
 			  pass
+
+		if record_data.name == "temperature":
+			T.append((record_data.value))
 
 		if record_data.name == "cadence":
 			#if (((record_data.value == None) or (record_data.value == 0)) and (cad != [])):
@@ -518,14 +524,21 @@ try:	#
 	power  = np.array(smooth(power,smooth_pow_print))
 	powerZ = np.array(smooth(power,smooth_pow_zonen))
 	if max(power) > 0:
-		while max(power)*stretch_power < 100:
+		while max(power)*stretch_power < (max_hf/2*1.1):
 			stretch_power = stretch_power*2
-		while max(power)*stretch_power > 200:
+		while max(power)*stretch_power > (max_hf*1.1):
 			stretch_power = stretch_power/2
 		print ("stretch_power: " + str(stretch_power))
 except:
 	ap = 0
 	print("Keine Leistung verfuegbar")
+
+stretch_T = 10
+while max(T)*stretch_T < (max_hf/2*1.1):
+	stretch_T = stretch_T*2
+while max(T)*stretch_T > (max_hf*1.1):
+	stretch_T = stretch_T/2
+print ("stretch_temperature: " + str(stretch_T))
 
 
 TB = np.zeros(len(zonen)+1)
@@ -617,7 +630,7 @@ except:
 
 stretch_speed = 1
 if max(speed) > 0:
-	while max(speed)*stretch_speed < 100:
+	while max(speed)*stretch_speed < max_hf/2*1.1:
 		stretch_speed = stretch_speed*2
 
 print("stretch_speed: " + str(stretch_speed))
@@ -635,7 +648,7 @@ if plot_weg == 1:
 	ax = fig.add_subplot(1, 1, 1)
 	ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
 	ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-	ax.set_ylim([0,180])
+	ax.set_ylim([0,max_hf])
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	plt.xlabel('Distance (km)')
 	plt.ylabel('Cadence, Speed, HF')
@@ -714,7 +727,7 @@ if plot_time == 1:
 	ax = fig.add_subplot(1, 1, 1)
 	ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
 	ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-	ax.set_ylim([0,180])
+	ax.set_ylim([0,max_hf])
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	ax.hlines(zonen,[0],[totalzeit],lw=1)
 	#ax.vlines(np.divide(pos,3600),[0],[200],lw=2,color='y')
@@ -742,6 +755,7 @@ if plot_time == 1:
 
 	plt.rc('lines', linewidth=2)
 
+	ax.plot(np.linspace(0,len(T)/3600,len(T)),np.multiply(T,stretch_T),lw=0.2, color="orange", label = "Temperature$\cdot$"+str(stretch_T))
 	ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
 	ax.plot(np.linspace(0,len(speed)/3600,len(speed)),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
 	ax.plot(np.linspace(0,len(hf)/3600,len(hf)),hf, label="HF")
@@ -766,7 +780,7 @@ if plot_pause == 1:
 	ax = fig.add_subplot(1, 1, 1)
 	ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
 	ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-	ax.set_ylim([0,180])
+	ax.set_ylim([0,max_hf])
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	ax.hlines(zonen,[t[0]/3600],[t[-1]/3600],lw=1)
 	ax.vlines(s_pauslinien,[0],[200],lw=2,color='y')
