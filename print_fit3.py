@@ -214,13 +214,23 @@ class rstruct:
 	strecke = 0
 	avspeed = 0
 	zeit    = 0
+	h       = 0
+	m       = 0
+	s       = 0
 	gzeit   = 0
 	avHR    = 0
 	power   = 0
 	anstieg = 0
 	v_max   = 0
+	pos     = 0
+	s_linie     = 0
+	s_zeitlinie = 0
+	s_pauslinie = 0
+	e_linie     = 0
+	e_zeitlinie = 0
+	e_pauslinie = 0
 
-runde     = 0
+runde  = 0
 Runden = []
 
 for Laps in fitfile.get_messages('lap'):
@@ -574,30 +584,20 @@ for i in range(0,(len(zonen))):
 rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (strecke/1000,avspeed,h,m,s,v_max,kCal))
 rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,avPower,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
 
-rh           = []
-rm           = []
-rs           = []
-pos          = []
-s_linien     = []
-s_zeitlinien = []
-s_pauslinien = []
-e_linien     = []
-e_zeitlinien = []
-e_pauslinien = []
   
 for i in range(0,runde):
-	rh.append(np.floor(Runden[i].zeit/3600))
-	rm.append(np.floor((Runden[i].zeit - rh[-1]*3600)/60))
-	rs.append(Runden[i].zeit - rh[-1]*3600 - rm[-1]*60)
-	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Runden[i].strecke/1000, Runden[i].avspeed,rh[-1],rm[-1],rs[-1],Runden[i].avHR,Runden[i].power,Runden[i].anstieg,Runden[i].v_max))
-	#linien.append((sum(rstrecken[0:i])/1000))
-	s_linien.append(Runden[i].x_start/1000)
-	s_zeitlinien.append(Runden[i].z_start/3600)
-	s_pauslinien.append(Runden[i].t_start/3600)
-	e_linien.append(Runden[i].x_end/1000)
-	e_zeitlinien.append(Runden[i].z_end/3600)
-	e_pauslinien.append(Runden[i].t_end/3600)
-	pos.append(( (np.abs(np.array(xspeed) - e_linien[-1]*1000)).argmin() ))
+	Runden[i].h = np.floor(Runden[i].zeit/3600)
+	Runden[i].m = np.floor((Runden[i].zeit - Runden[-1].h*3600)/60)
+	Runden[i].s = Runden[i].zeit - Runden[i].h*3600 - Runden[i].m*60
+	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Runden[i].strecke/1000, Runden[i].avspeed,Runden[i].h,Runden[i].m,Runden[i].s,Runden[i].avHR,Runden[i].power,Runden[i].anstieg,Runden[i].v_max))
+	#Runden[i].linie = (sum(rstrecken[0:i])/1000))
+	Runden[i].s_linie = Runden[i].x_start/1000
+	Runden[i].s_zeitlinie = Runden[i].z_start/3600
+	Runden[i].s_pauslinie = Runden[i].t_start/3600
+	Runden[i].e_linie = Runden[i].x_end/1000
+	Runden[i].e_zeitlinie = Runden[i].z_end/3600
+	Runden[i].e_pauslinie = Runden[i].t_end/3600
+	Runden[i].pos = ( (np.abs(np.array(xspeed) - Runden[-1].e_linie*1000)).argmin() )
 
 rstr = rstr.replace('.',',')
 rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
@@ -662,18 +662,20 @@ if plot_weg == 1:
 	plt.rc('lines', linewidth=2)
 
 	for i in range(0,runde):
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 170,("Runde %d"%(i+1)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 161,("%d km"%(Runden[i].strecke/1000)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 152,("%d km/h"%(round(Runden[i].avspeed))),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 143,("%d HS"%(Runden[i].avHR)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 134,("%d W"%(Runden[i].power)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 125,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 170,("Runde %d"%(i+1)),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 161,("%d km"%(Runden[i].strecke/1000)),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 152,("%d km/h"%(round(Runden[i].avspeed))),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 143,("%d HS"%(Runden[i].avHR)),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 134,("%d W"%(Runden[i].power)),color='y')
+	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 125,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
+	  ax.vlines(Runden[i].s_linie,[0],[200],lw=2,color='y')
+	  ax.vlines(Runden[i].e_linie,[0],[200],lw=2,color='y')
 	# if runde > 0:
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 170,("Runde %d"%(i+1)),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 161,("%d km/h"%(Runden[i].avspeed)),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 152,("%d HS"%(Runden[i].avHR)),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 143,("%d km"%(Runden[i].strecke/1000)),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 134,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
+	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].strecke)/1000]), 170,("Runde %d"%(i+1)),color='y')
+	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].strecke)/1000]), 161,("%d km/h"%(Runden[i].avspeed)),color='y')
+	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].strecke)/1000]), 152,("%d HS"%(Runden[i].avHR)),color='y')
+	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].strecke)/1000]), 143,("%d km"%(Runden[i].strecke/1000)),color='y')
+	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].strecke)/1000]), 134,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
 	for i in range(0,zwischen):
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 161,("%d km"%(x_zw[i]/1000)),color='y')
@@ -689,8 +691,6 @@ if plot_weg == 1:
 	ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
 	ax.hlines(zonen,[0],[max(x)/1000],lw=1,colors='r')
 	ax.hlines(tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
-	ax.vlines(s_linien,[0],[200],lw=2,color='y')
-	ax.vlines(e_linien,[0],[200],lw=2,color='y')
 	if plot_hoehe == 1:
 	    ax2.plot(np.divide(xalt,1000),alt,lw=1)
 	ax2.set_xlim([0,max(x)/1000])
@@ -734,17 +734,17 @@ if plot_time == 1:
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	ax.hlines(zonen,[0],[totalzeit],lw=1)
 	#ax.vlines(np.divide(pos,3600),[0],[200],lw=2,color='y')
-	#pos.append((totalzeit))
+	#pos = (totalzeit))
 	#for i in range(1,runde+1):
 	  #ax.text(np.mean([pos[i-1],pos[i]])/3600, 170,("Runde %d"%(i)),color='y')
 	#if runde > 0:
 	  #ax.text(np.mean([pos[i]/3600,sum(Runden[i].zeit)/3600]), 170,("Runde %d"%(i+1)),color='y')
-	ax.vlines(s_zeitlinien,[0],[200],lw=2,color='y')
-	ax.vlines(e_zeitlinien,[0],[200],lw=2,color='y')
 	for i in range(0,runde):
-	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 170,("Runde %d"%(i+1)),color='y')
-	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 161,("%d km"%(Runden[i].avspeed)),color='y')
-	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 152,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
+	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 170,("Runde %d"%(i+1)),color='y')
+	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 161,("%d km"%(Runden[i].avspeed)),color='y')
+	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 152,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
+	  ax.vlines(Runden[i].s_zeitlinie,[0],[200],lw=2,color='y')
+	  ax.vlines(Runden[i].e_zeitlinie,[0],[200],lw=2,color='y')
 	for i in range(0,zwischen):
 		ax.text(np.mean([z_zw_start[i],z_zw_end[i]])/3600, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([z_zw_start[i],z_zw_end[i]])/3600, 161,("%d km"%(x_zw[i]/1000)),color='y')
@@ -786,11 +786,11 @@ if plot_pause == 1:
 	ax.set_ylim([0,max_hf])
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	ax.hlines(zonen,[t[0]/3600],[t[-1]/3600],lw=1)
-	ax.vlines(s_pauslinien,[0],[200],lw=2,color='y')
-	ax.vlines(e_pauslinien,[0],[200],lw=2,color='y')
 	# ax.vlines(ereignis,[0],[200],lw=2,color='g')
 	for i in range(0,runde):
-	  ax.text(np.mean([s_pauslinien[i],e_pauslinien[i]]), 170,("Runde %d"%(i+1)),color='y')
+		ax.vlines(Runden[i].s_pauslinie,[0],[200],lw=2,color='y')
+		ax.vlines(Runden[i].e_pauslinie,[0],[200],lw=2,color='y')
+		ax.text(np.mean([Runden[i].s_pauslinie,Runden[i].e_pauslinie]), 170,("Runde %d"%(i+1)),color='y')
 	for i in range(0,zwischen):
 		ax.text(np.mean([t_zw_start[i],t_zw_end[i]])/3600, 170,("Zwischen %d"%(i+1)),color='y')
 	plt.xlabel('Time (h)')
