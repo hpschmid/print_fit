@@ -204,60 +204,65 @@ for record in fitfile.get_messages('record'):
 # 			temp = zs.second + zs.minute*60 + zs.hour*3600
 # 			ereignis.append(temp/3600)
 
+class rstruct:
+	x_start = 0
+	x_end   = 0
+	t_start = 0
+	t_end   = 0
+	z_start = 0
+	z_end   = 0
+	strecke = 0
+	avspeed = 0
+	zeit    = 0
+	gzeit   = 0
+	avHR    = 0
+	power   = 0
+	anstieg = 0
+	v_max   = 0
+
 runde     = 0
-x_rstart  = []
-x_rend    = []
-t_rstart  = []
-t_rend    = []
-z_rstart  = []
-z_rend    = []
-rstrecken = []
-ravspeed  = []
-rzeiten   = []
-rgzeiten  = []
-ravHR     = []
-rpower    = []
-ranstiege = []
-rv_max    = []
+Runden = []
+
 for Laps in fitfile.get_messages('lap'):
 	runde = runde + 1
+	Runden.append(rstruct())
 	print("Runde " + str(runde))
 	for record_data in Laps:
 		if record_data.name == "start_time":
 			zs   = datetime_to_local(record_data.value)
 			temp = zs.second + zs.minute*60 + zs.hour*3600
-			t_rstart.append(temp)
-			#x_rstart.append(x[t.index(temp)])
+			Runden[-1].t_start = temp
+			#Runden[-1].x_start = x[t.index(temp)]
 			idx = (np.abs(np.asarray(t) - temp)).argmin()
-			z_rstart.append(idx)
-			x_rstart.append(x[idx])
+			Runden[-1].z_start = idx
+			Runden[-1].x_start = x[idx]
 		if record_data.name == "timestamp":
 			zs   = datetime_to_local(record_data.value)
 			temp = zs.second + zs.minute*60 + zs.hour*3600
-			t_rend.append(temp)
+			Runden[-1].t_end = temp
 			idx = (np.abs(np.asarray(t) - temp)).argmin()
-			z_rend.append(idx)
-			x_rend.append(x[idx])
+			Runden[-1].z_end = idx
+			Runden[-1].x_end = x[idx]
 		if record_data.name == "total_distance":
-			rstrecken.append((record_data.value))
+			Runden[-1].strecke = record_data.value
 		if record_data.name == "avg_speed":
-			ravspeed.append((record_data.value*3.6/1000))
+			Runden[-1].avspeed = record_data.value*3.6/1000
 		if record_data.name == "total_timer_time":
-			rzeiten.append((record_data.value))
+			Runden[-1].zeit = record_data.value
 		if record_data.name == "total_elapsed_time":
-			rgzeiten.append((record_data.value))
+			Runden[-1].gzeit = record_data.value
 		if record_data.name == "avg_heart_rate":
-			ravHR.append((record_data.value))
-			if ravHR[-1] == None:
-				ravHR[-1] = 0
+			Runden[-1].avHR = record_data.value
+			if Runden[-1].avHR == None:
+				Runden[-1].avHR = 0
 		if record_data.name == "avg_power":
-			rpower.append((record_data.value))
-			if rpower[-1] == None:
-				rpower[-1] = 0
+			Runden[-1].power = record_data.value
+			if Runden[-1].power == None:
+				Runden[-1].power = 0
 		if record_data.name == "total_ascent":
-			ranstiege.append((record_data.value))
+			Runden[-1].anstieg = record_data.value
 		if record_data.name == "max_speed":
-			rv_max.append((record_data.value*3.6/1000))
+			Runden[-1].v_max = record_data.value*3.6/1000
 		if record_data.units:
 			print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
 		else:
@@ -276,37 +281,37 @@ x_zw       = []
 z_zw       = []
 i = 0
 if runde > 0:
-	if (x_rstart[0] - x[0]) > 5000:
+	if (Runden[0].x_start - x[0]) > 5000:
 		zwischen = zwischen + 1
 		x_zw_start.append(x[0])
-		x_zw_end.append(x_rstart[0])
+		x_zw_end.append(Runden[0].x_start)
 		z_zw_start.append(0)
-		z_zw_end.append(z_rstart[0])
+		z_zw_end.append(Runden[0].z_start)
 		t_zw_start.append(t[0])
-		t_zw_end.append(t_rstart[0])
-		x_zw.append(x_rstart[0])
-		z_zw.append(z_rstart[0])
+		t_zw_end.append(Runden[0].t_start)
+		x_zw.append(Runden[0].x_start)
+		z_zw.append(Runden[0].z_start)
 	if runde > 1:
 		for i in range(1,runde):
-			if (x_rstart[i] - x_rend[i-1]) > 5000:
+			if (Runden[i].x_start - Runden[i-1].x_end) > 5000:
 				zwischen = zwischen + 1
-				x_zw.append(x_rstart[i] - x_rend[i-1])
-				z_zw.append(z_rstart[i] - z_rend[i-1])
-				z_zw_start.append(z_rend[i-1])
-				z_zw_end.append(z_rstart[i])
-				t_zw_start.append(t_rend[i-1])
-				t_zw_end.append(t_rstart[i])
-				x_zw_start.append(x_rend[i-1])
-				x_zw_end.append(x_rstart[i])
-	if (x[-1] - x_rend[-1]) > 5000:
+				x_zw.append(Runden[i].x_start - Runden[i-1].x_end)
+				z_zw.append(Runden[i].z_start - Runden[i-1].z_end)
+				z_zw_start.append(Runden[i-1].z_end)
+				z_zw_end.append(Runden[i].z_start)
+				t_zw_start.append(Runden[i-1].t_end)
+				t_zw_end.append(Runden[i].t_start)
+				x_zw_start.append(Runden[i-1].x_end)
+				x_zw_end.append(Runden[i].x_start)
+	if (x[-1] - Runden[-1].x_end) > 5000:
 		zwischen = zwischen + 1
-		x_zw.append(x[-1] - x_rend[-1])
-		z_zw_start.append(z_rend[i-1])
+		x_zw.append(x[-1] - Runden[-1].x_end)
+		z_zw_start.append(Runden[i-1].z_end)
 		z_zw_end.append(len(hf))
-		t_zw_start.append(t_rend[i-1])
+		t_zw_start.append(Runden[i-1].t_end)
 		t_zw_end.append(t[-1])
-		z_zw.append(len(tspeed) - z_rend[i-1])
-		x_zw_start.append(x_rend[-1])
+		z_zw.append(len(tspeed) - Runden[i-1].z_end)
+		x_zw_start.append(Runden[-1].x_end)
 		x_zw_end.append(x[-1])
 
 zh     = [0]*zwischen
@@ -579,21 +584,19 @@ s_pauslinien = []
 e_linien     = []
 e_zeitlinien = []
 e_pauslinien = []
-if (rpower == []):
-  rpower = np.zeros(runde+1)
   
 for i in range(0,runde):
-	rh.append(np.floor(rzeiten[i]/3600))
-	rm.append(np.floor((rzeiten[i] - rh[-1]*3600)/60))
-	rs.append(rzeiten[i] - rh[-1]*3600 - rm[-1]*60)
-	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (rstrecken[i]/1000, ravspeed[i],rh[-1],rm[-1],rs[-1],ravHR[i],rpower[i],ranstiege[i],rv_max[i]))
+	rh.append(np.floor(Runden[i].zeit/3600))
+	rm.append(np.floor((Runden[i].zeit - rh[-1]*3600)/60))
+	rs.append(Runden[i].zeit - rh[-1]*3600 - rm[-1]*60)
+	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Runden[i].strecke/1000, Runden[i].avspeed,rh[-1],rm[-1],rs[-1],Runden[i].avHR,Runden[i].power,Runden[i].anstieg,Runden[i].v_max))
 	#linien.append((sum(rstrecken[0:i])/1000))
-	s_linien.append(x_rstart[i]/1000)
-	s_zeitlinien.append(z_rstart[i]/3600)
-	s_pauslinien.append(t_rstart[i]/3600)
-	e_linien.append(x_rend[i]/1000)
-	e_zeitlinien.append(z_rend[i]/3600)
-	e_pauslinien.append(t_rend[i]/3600)
+	s_linien.append(Runden[i].x_start/1000)
+	s_zeitlinien.append(Runden[i].z_start/3600)
+	s_pauslinien.append(Runden[i].t_start/3600)
+	e_linien.append(Runden[i].x_end/1000)
+	e_zeitlinien.append(Runden[i].z_end/3600)
+	e_pauslinien.append(Runden[i].t_end/3600)
 	pos.append(( (np.abs(np.array(xspeed) - e_linien[-1]*1000)).argmin() ))
 
 rstr = rstr.replace('.',',')
@@ -660,21 +663,21 @@ if plot_weg == 1:
 
 	for i in range(0,runde):
 	  ax.text(np.mean([s_linien[i],e_linien[i]]), 170,("Runde %d"%(i+1)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 161,("%d km"%(rstrecken[i]/1000)),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 152,("%d km/h"%(ravspeed[i])),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 143,("%d HS"%(ravHR[i])),color='y')
-	  ax.text(np.mean([s_linien[i],e_linien[i]]), 134,("%d W"%(rpower[i])),color='y')
+	  ax.text(np.mean([s_linien[i],e_linien[i]]), 161,("%d km"%(Runden[i].strecke/1000)),color='y')
+	  ax.text(np.mean([s_linien[i],e_linien[i]]), 152,("%d km/h"%(round(Runden[i].avspeed))),color='y')
+	  ax.text(np.mean([s_linien[i],e_linien[i]]), 143,("%d HS"%(Runden[i].avHR)),color='y')
+	  ax.text(np.mean([s_linien[i],e_linien[i]]), 134,("%d W"%(Runden[i].power)),color='y')
 	  ax.text(np.mean([s_linien[i],e_linien[i]]), 125,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
 	# if runde > 0:
 	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 170,("Runde %d"%(i+1)),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 161,("%d km/h"%(ravspeed[i])),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 152,("%d HS"%(ravHR[i])),color='y')
-	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 143,("%d km"%(rstrecken[i]/1000)),color='y')
+	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 161,("%d km/h"%(Runden[i].avspeed)),color='y')
+	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 152,("%d HS"%(Runden[i].avHR)),color='y')
+	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 143,("%d km"%(Runden[i].strecke/1000)),color='y')
 	#     ax.text(np.mean([e_linien[i],sum(rstrecken)/1000]), 134,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
 	for i in range(0,zwischen):
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 161,("%d km"%(x_zw[i]/1000)),color='y')
-		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 152,("%d km/h"%(v_zw[i]*3.6)),color='y')
+		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 152,("%d km/h"%(round(v_zw[i]*3.6))),color='y')
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 143,("%d HS"%(hf_zw[i])),color='y')
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 134,("%d W"%(pow_zw[i])),color='y')
 		ax.text(np.mean([x_zw_start[i],x_zw_end[i]])/1000, 125,("%02d:%02d:%02d" % (zh[i],zm[i],zs[i])),color='y')
@@ -735,12 +738,12 @@ if plot_time == 1:
 	#for i in range(1,runde+1):
 	  #ax.text(np.mean([pos[i-1],pos[i]])/3600, 170,("Runde %d"%(i)),color='y')
 	#if runde > 0:
-	  #ax.text(np.mean([pos[i]/3600,sum(rzeiten)/3600]), 170,("Runde %d"%(i+1)),color='y')
+	  #ax.text(np.mean([pos[i]/3600,sum(Runden[i].zeit)/3600]), 170,("Runde %d"%(i+1)),color='y')
 	ax.vlines(s_zeitlinien,[0],[200],lw=2,color='y')
 	ax.vlines(e_zeitlinien,[0],[200],lw=2,color='y')
 	for i in range(0,runde):
 	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 170,("Runde %d"%(i+1)),color='y')
-	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 161,("%d km"%(ravspeed[i])),color='y')
+	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 161,("%d km"%(Runden[i].avspeed)),color='y')
 	  ax.text(np.mean([s_zeitlinien[i],e_zeitlinien[i]]), 152,("%02d:%02d:%02d" % (rh[i],rm[i],rs[i])),color='y')
 	for i in range(0,zwischen):
 		ax.text(np.mean([z_zw_start[i],z_zw_end[i]])/3600, 170,("Zwischen %d"%(i+1)),color='y')
