@@ -306,7 +306,6 @@ if runde > 0:
 		Zwischen[-1].t_end = Runden[0].t_start
 		Zwischen[-1].x = Runden[0].x_start
 		Zwischen[-1].zeit = Runden[0].z_start
-		Zwischen[-1].v_max = max(speed[Zwischen[-1].z_start:Zwischen[-1].z_end])
 		Alle.insert(0,Zwischen[-1])
 	if runde > 1:
 		for i in range(1,runde):
@@ -321,7 +320,6 @@ if runde > 0:
 				Zwischen[-1].t_end = Runden[i].t_start
 				Zwischen[-1].x_start = Runden[i-1].x_end
 				Zwischen[-1].x_end = Runden[i].x_start
-				Zwischen[-1].v_max = max(speed[Zwischen[-1].z_start:Zwischen[-1].z_end])
 				Alle.insert(i,Zwischen[-1])
 	if (x[-1] - Runden[-1].x_end) > 5000:
 		zwischen = zwischen + 1
@@ -334,10 +332,7 @@ if runde > 0:
 		Zwischen[-1].zeit = len(tspeed) - Runden[-1].z_end
 		Zwischen[-1].x_start = Runden[-1].x_end
 		Zwischen[-1].x_end = x[-1]
-		Zwischen[-1].v_max = max(speed[Zwischen[-1].z_start:Zwischen[-1].z_end])
-		print('4: %d' % (len(Runden)))
 		Alle.append(Zwischen[-1])
-		print('44: %d' % (len(Runden)))
 
 for i in range(0,zwischen):
 	Zwischen[i].v = Zwischen[i].x/Zwischen[i].zeit
@@ -345,6 +340,10 @@ for i in range(0,zwischen):
 	Zwischen[i].m = np.floor((Zwischen[i].zeit - Zwischen[i].h*3600)/60)
 	Zwischen[i].s = Zwischen[i].zeit - Zwischen[i].h*3600 - Zwischen[i].m*60
 	Zwischen[i].speed = Zwischen[i].x/Zwischen[i].zeit*3.6
+	Zwischen[i].v_max = max(speed[Zwischen[i].z_start:Zwischen[i].z_end])
+	auf = np.diff(alt[Zwischen[i].z_start:Zwischen[i].z_end])
+	auf[auf < 0] = 0
+	Zwischen[i].anstieg = sum(auf) 
 	try:
 		hfz = np.array(hf[Zwischen[i].z_start:Zwischen[i].z_end])
 		hfz = list(filter(None,hfz))
@@ -639,7 +638,7 @@ print(">")
 
 fen1.destroy()
 
-################# Nach Weg:
+################# Nach Weg: ###########################################################################
 
 if plot_weg == 1:
 	plt.xkcd()
@@ -717,7 +716,7 @@ if plot_weg == 1:
 
 	plt.show()
 
-################# Nach Zeit ohne Pausen:
+################# Nach Zeit (ohne Pausen): ###########################################################################
 
 if plot_time == 1:
 	plt.xkcd()
@@ -769,8 +768,7 @@ if plot_time == 1:
 
 	plt.show()
 
-
-################# Nach Uhrzeit:
+################# Nach Uhrzeit: ###########################################################################
 
 if plot_pause == 1:
 	plt.xkcd()
