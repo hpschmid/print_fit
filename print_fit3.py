@@ -55,7 +55,7 @@ fen1.title("FitFileParser")
 T = Text(fen1, height=5, width=40)
 T.pack()
 T.insert(END, "Asking for filename\n\n")
-name= filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=latest_file)
+name = filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=latest_file)
 fitfile = FitFile(name)
 csvdatei = name.replace('fit','csv')
 T.insert(END, "Parsing %s\n" % (os.path.basename(name)))
@@ -76,12 +76,12 @@ def datetime_to_local(utc_datetime):
     return utc_datetime + offset
 
 x     = []
-speed = []
-speedt= []
-xspeed= []
-tspeed= []
-hf    = []
-hft   = []
+speed = [] # Geschwindigkeit vs. Fahrzeit
+speedt= [] # Geschwindigkeit vs. Uhrzeit
+xspeed= [] # Weg Achse für Geschwindigkeit
+tspeed= [] # Uhrzeit Achse für Geschwindigkeit
+hf    = [] # Herzfrequnez vs. Fahrzeit
+hft   = [] # etc.
 xhf   = []
 thf   = []
 power = []
@@ -100,97 +100,81 @@ T     = [] # Temperatur
 tT    = []
 # Get all data messages that are of type record
 for record in fitfile.get_messages('record'):
-
 	# Go through all the data entries in this record
-	for record_data in record:
-		if record_data.name == "timestamp":
-			zs   = datetime_to_local(record_data.value)
-			temp = zs.second + zs.minute*60 + zs.hour*3600
-			try:
-				if temp < t[-1]:
-					temp = temp + 24*3600
-				t.append(temp)
-			except:
-				t = [temp]
-		if record_data.name == "distance":
-			x.append((record_data.value))
-		if (record_data.name == "enhanced_speed") and (record_data.value != None) :
-			speedt.append((record_data.value*3.6))
-			try:
-				tspeed.append((t[-1]/float(3600)))
-			except:
-				del speedt[-1]
-			if (record_data.value != 0):
-			  speed.append((record_data.value*3.6))
-			  xspeed.append((x[-1]))
-		if record_data.name == "heart_rate":
-			hft.append((record_data.value))
-			try:
-				thf.append((t[-1]/float(3600)))
-			except:
-				del hft[-1]
-			try:
-			  if (speedt[-1] != 0):
-			    hf.append((record_data.value))
-			    xhf.append((x[-1]))
-			except:
-			  pass
-			  #print("no speed found for this (first?) point")
+	x.append(record.get_value('distance'))
+	T.append(record.get_value('temperature'))
+	zs = datetime_to_local(record.get_value('timestamp'))
+	temp = zs.second + zs.minute*60 + zs.hour*3600
+	try:
+		if temp < t[-1]:
+			temp = temp + 24*3600
+		t.append(temp)
+	except:
+		t = [temp]
+	speedt.append(record.get_value('enhanced_speed')*3.6)
+	if (speedt[-1] != None):
+		speedt[-1] = speedt[-1]
+		try:
+			tspeed.append((t[-1]/float(3600)))
+		except:
+			del speedt[-1]
+		if (speedt[-1] != 0):
+		  speed.append(speedt[-1])
+		  xspeed.append(x[-1])
+	hft.append(record.get_value('heart_rate'))
+	try:
+		thf.append(t[-1]/float(3600))
+	except:
+		del hft[-1]
+	try:
+	  if (speedt[-1] != 0):
+	    hf.append(hft[-1])
+	    xhf.append((x[-1]))
+	except:
+	  pass
+	powt.append(record.get_value('power'))
+	try:
+		tpow.append(t[-1]/float(3600))
+	except:
+		del powt[-1]
+	try:
+	  if (speedt[-1] != 0):
+	    power.append(powt[-1])
+	    xpow.append(x[-1])
+	except:
+		pass
 
-		if (record_data.name == "power"):# and (record_data.value != None):
-			powt.append((record_data.value))
-			try:
-				tpow.append((t[-1]/float(3600)))
-			except:
-				del powt[-1]
-			try:
-			  if (speedt[-1] != 0):
-			    power.append((record_data.value))
-			    xpow.append((x[-1]))
-			except:
-			  pass
-			  #print("no speed found for this (first?) point")
+	altt.append(record.get_value('enhanced_altitude'))
+	try:
+		talt.append(t[-1]/float(3600))
+	except:
+		del altt[-1]
+	try:
+	  if (speedt[-1] != 0):
+	    alt.append(altt[-1])
+	    xalt.append(x[-1])
+	except:
+	  pass
+	cadt.append(record.get_value('cadence'))
+	try:
+		tcad.append(t[-1]/float(3600))
+	except:
+		del cadt[-1]
+	try:
+	  if (speedt[-1] != 0):
+	    cad.append(cadt[-1])
+	    xcad.append(x[-1])
+	except:
+	  pass
 
-		if record_data.name == "enhanced_altitude":
-#			if record_data.value > 0:
-			altt.append((record_data.value))
-			try:
-				talt.append((t[-1]/float(3600)))
-			except:
-				del altt[-1]
-			try:
-			  if (speedt[-1] != 0):
-			    alt.append((record_data.value))
-			    xalt.append((x[-1]))
-			except:
-			  pass
-
-		if record_data.name == "temperature":
-			T.append((record_data.value))
-
-		if record_data.name == "cadence":
-			#if (((record_data.value == None) or (record_data.value == 0)) and (cad != [])):
-				#cad.append((cad[-1]))
-			#else:
-			cadt.append((record_data.value))
-			try:
-				tcad.append((t[-1]/float(3600)))
-			except:
-				del cadt[-1]
-			try:
-			  if (speedt[-1] != 0):
-			    cad.append((record_data.value))
-			    xcad.append((x[-1]))
-			except:
-			  pass
-			    
-		if print_alles == 1:
+if print_alles == 1:
+	for record in fitfile.get_messages('record'):
+		for record_data in record:
 			if record_data.units:
 				print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
 			# Print the records name and value (and units if it has any)
 			else:
 				print(" * %s: %s" % (record_data.name, record_data.value))
-	if print_alles == 1:
 		print()
 	
 # test what event stands for (SRM makes event for every stop)
@@ -335,7 +319,6 @@ if runde > 0:
 		Alle.append(Zwischen[-1])
 
 for i in range(0,zwischen):
-	Zwischen[i].v = Zwischen[i].x/Zwischen[i].zeit
 	Zwischen[i].h = np.floor(Zwischen[i].zeit/3600)
 	Zwischen[i].m = np.floor((Zwischen[i].zeit - Zwischen[i].h*3600)/60)
 	Zwischen[i].s = Zwischen[i].zeit - Zwischen[i].h*3600 - Zwischen[i].m*60
@@ -674,7 +657,7 @@ if plot_weg == 1:
 	for i in range(0,zwischen):
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 161,("%d km"%(Zwischen[i].x/1000)),color='y')
-		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 152,("%d km/h"%(round(Zwischen[i].v*3.6))),color='y')
+		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 152,("%d km/h"%(round(Zwischen[i].speed))),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 143,("%d HS"%(Zwischen[i].HF)),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 134,("%d W"%(Zwischen[i].power)),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 125,("%02d:%02d:%02d" % (Zwischen[i].h,Zwischen[i].m,Zwischen[i].s)),color='y')
