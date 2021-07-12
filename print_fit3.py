@@ -39,6 +39,7 @@ plot_weg    = 1 # plot data vs. distance
 plot_zeit   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
 plot_hoehe  = 0 # plot altitude profile
+CP          = 1 # calculate critical power?
 Fitness     = 0 # correction of heart rate (for bad days)
 bike_id     = 1 # default bike profile in case it can't be read from file
 ####################################################################################################
@@ -517,15 +518,15 @@ print("TSS = %d" % (tss))
 
 stretch_power = 1
 try:	#
-	power  = [e if e != None else 0 for e in power]
+	power  = np.array([e if e != None else 0 for e in power])
 	powt   = [e if e != None else 0 for e in powt]
 	powt   = smooth(powt,smooth_pow_print)
-	power  = np.array(smooth(power,smooth_pow_print))
-	powerZ = np.array(smooth(power,smooth_pow_zonen))
-	if max(power) > 0:
-		while max(power)*stretch_power < (max_hf/2*1.1):
+	powerP = smooth(power,smooth_pow_print)
+	powerZ = smooth(power,smooth_pow_zonen)
+	if max(powerP) > 0:
+		while max(powerP)*stretch_power < (max_hf/2*1.1):
 			stretch_power = stretch_power*2
-		while max(power)*stretch_power > (max_hf*1.1):
+		while max(powerP)*stretch_power > (max_hf*1.1):
 			stretch_power = stretch_power/2
 		print ("stretch_power: " + str(stretch_power))
 except:
@@ -657,7 +658,7 @@ if plot_weg == 1:
 	ax.plot(np.divide(xcad,1000),cad,lw=0.5, label = "Cadence")
 	ax.plot(np.divide(xspeed,1000),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
 	ax.plot(np.divide(xhf,1000),hf, label="HF")
-	ax.plot(np.divide(xpow,1000),np.multiply(power,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+	ax.plot(np.divide(xpow,1000),np.multiply(powerP,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
 	ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
 	ax.hlines(zonen,[0],[max(x)/1000],lw=1,colors='r')
 	ax.hlines(tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
@@ -732,7 +733,7 @@ if plot_zeit == 1:
 	ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
 	ax.plot(np.linspace(0,len(speed)/3600,len(speed)),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
 	ax.plot(np.linspace(0,len(hf)/3600,len(hf)),hf, label="HF")
-	ax.plot(np.linspace(0,len(power)/3600,len(power)),np.multiply(power,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+	ax.plot(np.linspace(0,len(powerP)/3600,len(powerP)),np.multiply(powerP,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
 	ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
 	if plot_hoehe == 1:
 	    ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
@@ -787,16 +788,22 @@ if plot_pause == 1:
 
 	plt.show()
 
+if CP == 1:
+	Int  = [0]*int(max(power))
+	Pint = [0]*int(max(power))
+	for i in range(lower_Plimit,len(Pint)):
+		 Int[i] = i
+		 Pint[i] = len(power[power > i])
 
-Pint = [0]*int(max(powerZ))
-for i in range(lower_Plimit,len(Pint)):
-	 Pint[i] = len(powerZ[powerZ > i])
 
-plt.xkcd()
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.grid(color='k', linestyle=':', linewidth=1)
-ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
-ax.legend(loc='best')
+	plt.xkcd()
+	fig = plt.figure()
+	ax = fig.add_subplot(1, 1, 1)
+	ax.grid(color='k', linestyle=':', linewidth=1)
+	plt.xlabel('Intervall (min)')
+	plt.ylabel('Leistung (W)')
+	# ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
+	ax.plot(np.divide(Pint[lower_Plimit:-1],60),Int[lower_Plimit:-1],lw=2, color="blue", label = "Critical Power")
+	ax.legend(loc='best')
 
-plt.show()
+	plt.show()
