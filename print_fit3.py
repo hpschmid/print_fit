@@ -23,6 +23,7 @@ from operator import add
 ###################################### Settings ####################################################
 zonen = [0,138,149,160,170] # HF zone limits
 FTP   = 255
+lower_Plimit = int(FTP/2)
 raeder = ('MTB','2er','Poison','Sab','Leihrad') # Bike names
 #[0.81,0.9,0.94,1,1.03,1.07]
 #tbPow = np.multiply([0,0.53,0.71,0.86,1],float(FTP))
@@ -30,13 +31,14 @@ tbPow = np.multiply([0,0.55,0.75,0.9,1.05],float(FTP)) # Power zones
 smooth_pow_print = 600 # 
 smooth_pow_zonen = 30
 max_hf = 180 # for scaling the plots
+schwelle_zwischen =  3000
 
-print_alles = 0 # show all records for debugging purposes
+debug_print = 0 # show all records for debugging purposes
 print_csv   = 0 # generate .csv file with result
 plot_weg    = 1 # plot data vs. distance
-plot_time   = 1 # plot data vs. time
+plot_zeit   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
-plot_hoehe  = 1 # plot altitude profile
+plot_hoehe  = 0 # plot altitude profile
 Fitness     = 0 # correction of heart rate (for bad days)
 bike_id     = 1 # default bike profile in case it can't be read from file
 ####################################################################################################
@@ -111,16 +113,12 @@ for record in fitfile.get_messages('record'):
 		t.append(temp)
 	except:
 		t = [temp]
-	speedt.append(record.get_value('enhanced_speed')*3.6)
-	if (speedt[-1] != None):
-		speedt[-1] = speedt[-1]
-		try:
-			tspeed.append((t[-1]/float(3600)))
-		except:
-			del speedt[-1]
-		if (speedt[-1] != 0):
-		  speed.append(speedt[-1])
-		  xspeed.append(x[-1])
+	temp = record.get_value('enhanced_speed')
+	if (temp != None):
+		speedt.append(temp*3.6)
+		tspeed.append((t[-1]/float(3600)))
+		speed.append(temp*3.6)
+		xspeed.append(x[-1])
 	hft.append(record.get_value('heart_rate'))
 	try:
 		thf.append(t[-1]/float(3600))
@@ -167,7 +165,7 @@ for record in fitfile.get_messages('record'):
 	except:
 	  pass
 
-if print_alles == 1:
+if debug_print == 1:
 	for record in fitfile.get_messages('record'):
 		for record_data in record:
 			if record_data.units:
@@ -214,13 +212,11 @@ class rstruct:
 	e_zeitlinie = 0
 	e_pauslinie = 0
 
-runde  = 0
 Runden = []
 
 for Laps in fitfile.get_messages('lap'):
-	runde = runde + 1
 	Runden.append(rstruct())
-	print("Runde " + str(runde))
+	print("Runde " + str(len(Runden)))
 	for record_data in Laps:
 		if record_data.name == "start_time":
 			zs   = datetime_to_local(record_data.value)
@@ -274,13 +270,11 @@ for Laps in fitfile.get_messages('lap'):
 	print()
 
 # Check, ob zwischen den Runden > 5 km sind, dann mach eine zusätzliche Runde draus:
-zwischen = 0
 Zwischen = []
 Alle     = Runden[:]
 i = 0
-if runde > 0:
-	if (Runden[0].x_start - x[0]) > 5000:
-		zwischen = zwischen + 1
+if len(Runden) > 0:
+	if (Runden[0].x_start - x[0]) > schwelle_zwischen:
 		Zwischen.append(rstruct())
 		Zwischen[-1].x_start = x[0]
 		Zwischen[-1].x_end = Runden[0].x_start
@@ -291,10 +285,9 @@ if runde > 0:
 		Zwischen[-1].x = Runden[0].x_start
 		Zwischen[-1].zeit = Runden[0].z_start
 		Alle.insert(0,Zwischen[-1])
-	if runde > 1:
-		for i in range(1,runde):
-			if (Runden[i].x_start - Runden[i-1].x_end) > 5000:
-				zwischen = zwischen + 1
+	if len(Runden) > 1:
+		for i in range(1,len(Runden)):
+			if (Runden[i].x_start - Runden[i-1].x_end) > schwelle_zwischen:
 				Zwischen.append(rstruct())
 				Zwischen[-1].x = Runden[i].x_start - Runden[i-1].x_end
 				Zwischen[-1].zeit = Runden[i].z_start - Runden[i-1].z_end
@@ -305,8 +298,7 @@ if runde > 0:
 				Zwischen[-1].x_start = Runden[i-1].x_end
 				Zwischen[-1].x_end = Runden[i].x_start
 				Alle.insert(i,Zwischen[-1])
-	if (x[-1] - Runden[-1].x_end) > 5000:
-		zwischen = zwischen + 1
+	if (x[-1] - Runden[-1].x_end) > schwelle_zwischen:
 		Zwischen.append(rstruct())
 		Zwischen[-1].x = x[-1] - Runden[-1].x_end
 		Zwischen[-1].z_start = Runden[-1].z_end
@@ -318,7 +310,7 @@ if runde > 0:
 		Zwischen[-1].x_end = x[-1]
 		Alle.append(Zwischen[-1])
 
-for i in range(0,zwischen):
+for i in range(0,len(Zwischen)):
 	Zwischen[i].h = np.floor(Zwischen[i].zeit/3600)
 	Zwischen[i].m = np.floor((Zwischen[i].zeit - Zwischen[i].h*3600)/60)
 	Zwischen[i].s = Zwischen[i].zeit - Zwischen[i].h*3600 - Zwischen[i].m*60
@@ -585,10 +577,10 @@ print(rstr)
 print(">")
 
 ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
-for i in range(0,runde):
+for i in range(0,len(Runden)):
 	ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
 ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;Kad;hm;tss;stress;" + (((str(raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
-for i in range(0,runde):
+for i in range(0,len(Runden)):
 	ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
 if (print_csv == 1):
@@ -639,7 +631,7 @@ if plot_weg == 1:
 
 	plt.rc('lines', linewidth=2)
 
-	for i in range(0,runde):
+	for i in range(0,len(Runden)):
 	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 170,("Runde %d"%(i+1)),color='y')
 	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 161,("%d km"%(Runden[i].x/1000)),color='y')
 	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 152,("%d km/h"%(round(Runden[i].speed))),color='y')
@@ -648,13 +640,13 @@ if plot_weg == 1:
 	  ax.text(np.mean([Runden[i].s_linie,Runden[i].e_linie]), 125,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
 	  ax.vlines(Runden[i].s_linie,[0],[200],lw=2,color='y')
 	  ax.vlines(Runden[i].e_linie,[0],[200],lw=2,color='y')
-	# if runde > 0:
+	# if len(Runden) > 0:
 	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].x)/1000]), 170,("Runde %d"%(i+1)),color='y')
 	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].x)/1000]), 161,("%d km/h"%(Runden[i].speed)),color='y')
 	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].x)/1000]), 152,("%d HS"%(Runden[i].HF)),color='y')
 	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].x)/1000]), 143,("%d km"%(Runden[i].x/1000)),color='y')
 	#     ax.text(np.mean([Runden[i].e_linie,sum(Runden[i].x)/1000]), 134,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
-	for i in range(0,zwischen):
+	for i in range(0,len(Zwischen)):
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 161,("%d km"%(Zwischen[i].x/1000)),color='y')
 		ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 152,("%d km/h"%(round(Zwischen[i].speed))),color='y')
@@ -701,7 +693,7 @@ if plot_weg == 1:
 
 ################# Nach Zeit (ohne Pausen): ###########################################################################
 
-if plot_time == 1:
+if plot_zeit == 1:
 	plt.xkcd()
 
 	fig = plt.figure()
@@ -713,17 +705,17 @@ if plot_time == 1:
 	ax.hlines(zonen,[0],[totalzeit],lw=1)
 	#ax.vlines(np.divide(pos,3600),[0],[200],lw=2,color='y')
 	#pos = (totalzeit))
-	#for i in range(1,runde+1):
+	#for i in range(1,len(Runden)+1):
 	  #ax.text(np.mean([pos[i-1],pos[i]])/3600, 170,("Runde %d"%(i)),color='y')
-	#if runde > 0:
+	#if len(Runden) > 0:
 	  #ax.text(np.mean([pos[i]/3600,sum(Runden[i].zeit)/3600]), 170,("Runde %d"%(i+1)),color='y')
-	for i in range(0,runde):
+	for i in range(0,len(Runden)):
 	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 170,("Runde %d"%(i+1)),color='y')
 	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 161,("%d km"%(Runden[i].speed)),color='y')
 	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 152,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
 	  ax.vlines(Runden[i].s_zeitlinie,[0],[200],lw=2,color='y')
 	  ax.vlines(Runden[i].e_zeitlinie,[0],[200],lw=2,color='y')
-	for i in range(0,zwischen):
+	for i in range(0,len(Zwischen)):
 		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 170,("Zwischen %d"%(i+1)),color='y')
 		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 161,("%d km"%(Zwischen[i].x/1000)),color='y')
 		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 152,("%02d:%02d:%02d" % (Zwischen[i].h,Zwischen[i].m,Zwischen[i].s)),color='y')
@@ -764,11 +756,11 @@ if plot_pause == 1:
 	ax.grid(color='k', linestyle=':', linewidth=1)
 	ax.hlines(zonen,[t[0]/3600],[t[-1]/3600],lw=1)
 	# ax.vlines(ereignis,[0],[200],lw=2,color='g')
-	for i in range(0,runde):
+	for i in range(0,len(Runden)):
 		ax.vlines(Runden[i].s_pauslinie,[0],[200],lw=2,color='y')
 		ax.vlines(Runden[i].e_pauslinie,[0],[200],lw=2,color='y')
 		ax.text(np.mean([Runden[i].s_pauslinie,Runden[i].e_pauslinie]), 170,("Runde %d"%(i+1)),color='y')
-	for i in range(0,zwischen):
+	for i in range(0,len(Zwischen)):
 		ax.text(np.mean([Zwischen[i].t_start,Zwischen[i].t_end])/3600, 170,("Zwischen %d"%(i+1)),color='y')
 	plt.xlabel('Time (h)')
 	plt.ylabel('Cadence, Speed, HF')
@@ -794,3 +786,17 @@ if plot_pause == 1:
 	#ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
 
 	plt.show()
+
+
+Pint = [0]*int(max(powerZ))
+for i in range(lower_Plimit,len(Pint)):
+	 Pint[i] = len(powerZ[powerZ > i])
+
+plt.xkcd()
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.grid(color='k', linestyle=':', linewidth=1)
+ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
+ax.legend(loc='best')
+
+plt.show()
