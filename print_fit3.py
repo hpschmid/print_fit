@@ -28,8 +28,8 @@ raeder = ('MTB','2er','Poison','Sab','Leihrad') # Bike names
 #[0.81,0.9,0.94,1,1.03,1.07]
 #tbPow = np.multiply([0,0.53,0.71,0.86,1],float(FTP))
 tbPow = np.multiply([0,0.55,0.75,0.9,1.05],float(FTP)) # Power zones
-smooth_pow_print = 600 # 
-smooth_pow_zonen = 30
+smooth_Pprint = 600 # 
+smooth_P30 = 30
 max_hf = 180 # for scaling the plots
 schwelle_zwischen =  3000
 
@@ -38,7 +38,7 @@ print_csv   = 0 # generate .csv file with result
 plot_weg    = 1 # plot data vs. distance
 plot_zeit   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
-plot_hoehe  = 0 # plot altitude profile
+plot_hoehe  = 1 # plot altitude profile
 CP          = 1 # calculate critical power?
 Fitness     = 0 # correction of heart rate (for bad days)
 bike_id     = 1 # default bike profile in case it can't be read from file
@@ -347,7 +347,7 @@ for Summary in fitfile.get_messages('session'):
 		if record_data.name == "avg_heart_rate":
 			HF = record_data.value
 		if record_data.name == "normalized_power":
-			avPower = record_data.value
+			NP = record_data.value
 		if record_data.name == "total_ascent":
 			anstieg = record_data.value
 		if record_data.name == "total_discent":
@@ -474,8 +474,8 @@ print("===============")
 print()
 
 
-if (avPower == None):
-  avPower = 0
+if (NP == None):
+  NP = 0
 
 startzeit  = datetime_to_local(startzeit)
 
@@ -489,49 +489,41 @@ mp = np.floor((pausenzeit - hp*3600)/60)
 sp = pausenzeit - hp*3600 - mp*60
 #hf = list(map(add, hf, [Fitness]*len(hf)))
 
-try:
-	af = np.array(hf)
-	af = list(filter(None,hf))
-	af = sum(af)/len(af)
-except:
+# Replace all 'None' by 0s and calc. mean excluding zeros:
+hf    = np.array([e if e != None else 0 for e in hf])
+af    = np.mean(hf[hf > 0])
+if np.isnan(af):
 	af = 0
-	print("Keine HF verfuegbar")
-try:
-	ac = np.array(cad)
-	ac = list(filter(None,ac))
-	#ac = ac(ac != 0)
-	ac = sum(ac)/len(ac)
-except:
+cad   = np.array([e if e != None else 0 for e in cad])
+ac    = np.mean(cad[cad > 0])
+if np.isnan(ac):
 	ac = 0
-	print("Keine Kadenz verfuegbar")
 
-if (avPower == 0):
+power = np.array([e if e != None else 0 for e in power])
+powt   = [e if e != None else 0 for e in powt]
+powt   = smooth(powt,smooth_Pprint)
+Pprint = smooth(power,smooth_Pprint)
+P30    = smooth(power,smooth_P30)
+NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
+print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (NP,NPcalc))
+
+if (NP == 0):
 	if (af == 0):
-		print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 75% Intensitaet")
-		tss = zeit/3600*80
+		print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 80% Intensitaet")
+		tss = int(zeit/3600*80)
 	else:
-		tss = zeit/3600*af/zonen[4]*100
+		tss = int(zeit/3600*af/zonen[4]*100)
 else:
-    tss = avPower/float(FTP)*zeit/3600*100
-
+    tss = (NP/float(FTP)*zeit/3600*100)
 print("TSS = %d" % (tss))
 
 stretch_power = 1
-try:	#
-	power  = np.array([e if e != None else 0 for e in power])
-	powt   = [e if e != None else 0 for e in powt]
-	powt   = smooth(powt,smooth_pow_print)
-	powerP = smooth(power,smooth_pow_print)
-	powerZ = smooth(power,smooth_pow_zonen)
-	if max(powerP) > 0:
-		while max(powerP)*stretch_power < (max_hf/2*1.1):
-			stretch_power = stretch_power*2
-		while max(powerP)*stretch_power > (max_hf*1.1):
-			stretch_power = stretch_power/2
-		print ("stretch_power: " + str(stretch_power))
-except:
-	ap = 0
-	print("Keine Leistung verfuegbar")
+if max(Pprint) > 0:
+	while max(Pprint)*stretch_power < (max_hf/2*1.1):
+		stretch_power = stretch_power*2
+	while max(Pprint)*stretch_power > (max_hf*1.1):
+		stretch_power = stretch_power/2
+	print ("stretch_power: " + str(stretch_power))
 
 stretch_T = 10
 while max(T)*stretch_T < (max_hf/2*1.1):
@@ -546,18 +538,18 @@ strZonen  = " "
 #print(range(0,len(zonen)))
 for i in range(0,(len(zonen))):
   if i == (len(zonen)-1):
-    if (avPower == 0):
+    if (NP == 0):
       TB[i] = sum(j > zonen[i]  for j in list(filter(None,hf)))
       messageZ = ("(HF >%2d Schläge) " % (zonen[i])) 
     else:
-      TB[i] = sum(j > tbPow[i]  for j in list(filter(None,powerZ)))
+      TB[i] = sum(j > tbPow[i]  for j in list(filter(None,P30)))
       messageZ = ("(>%2d W) " % (tbPow[i]))
   else:
-    if (avPower == 0):
+    if (NP == 0):
       TB[i] = sum(((j > zonen[i]) and (j <= zonen[i+1])) for j in list(filter(None,hf)))
       messageZ = ("(HF %2d - %2d) " % (zonen[i],zonen[i+1])) 
     else:
-      TB[i] = sum(((j > tbPow[i]) and (j <= tbPow[i+1])) for j in list(filter(None,powerZ)))
+      TB[i] = sum(((j > tbPow[i]) and (j <= tbPow[i+1])) for j in list(filter(None,P30)))
       messageZ = ("(%2d - %2d W) " % (tbPow[i],tbPow[i+1]))
 
   hz = np.floor(TB[i]/3600)
@@ -567,7 +559,7 @@ for i in range(0,(len(zonen))):
   strZonen = ("%s %2d:%2d:%2d;" % (strZonen,hz,mz,sz))
 
 rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (strecke/1000,avspeed,h,m,s,v_max,kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,avPower,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,NP,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
 for i in range(0,len(Alle)):
 	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Alle[i].x/1000, Alle[i].speed,Alle[i].h,Alle[i].m,Alle[i].s,Alle[i].HF,Alle[i].power,Alle[i].anstieg,Alle[i].v_max))
 rstr = rstr.replace('.',',')
@@ -658,7 +650,7 @@ if plot_weg == 1:
 	ax.plot(np.divide(xcad,1000),cad,lw=0.5, label = "Cadence")
 	ax.plot(np.divide(xspeed,1000),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
 	ax.plot(np.divide(xhf,1000),hf, label="HF")
-	ax.plot(np.divide(xpow,1000),np.multiply(powerP,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+	ax.plot(np.divide(xpow,1000),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
 	ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
 	ax.hlines(zonen,[0],[max(x)/1000],lw=1,colors='r')
 	ax.hlines(tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
@@ -733,7 +725,7 @@ if plot_zeit == 1:
 	ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
 	ax.plot(np.linspace(0,len(speed)/3600,len(speed)),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
 	ax.plot(np.linspace(0,len(hf)/3600,len(hf)),hf, label="HF")
-	ax.plot(np.linspace(0,len(powerP)/3600,len(powerP)),np.multiply(powerP,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+	ax.plot(np.linspace(0,len(Pprint)/3600,len(Pprint)),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
 	ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
 	if plot_hoehe == 1:
 	    ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
