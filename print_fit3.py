@@ -2,6 +2,10 @@
 #
 # Author: Gerhard Schmid
 # License: MIT
+# installiere Fitfileparser mit
+#	pip3 install fitparse
+# installiere Matplotlib mit
+#	apt-get python3-matplotlib
 ###############################
 
 from __future__ import division
@@ -780,13 +784,28 @@ if plot_pause == 1:
 
 	plt.show()
 
+# Critical Power:
 if CP == 1:
-	Int  = [0]*int(max(power))
-	Pint = [0]*int(max(power))
+	steps = 30
+	max_interval = 300*60
+	step_size = int(max_interval/steps)
+	Int   = [0]*int(max(power))
+	Pint  = [0]*int(max(power))
+	Int2  = [0]*len(range(1,steps+1))
+	Pint2 = [0]*len(range(1,steps+1))
+	# Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
 	for i in range(lower_Plimit,len(Pint)):
-		 Int[i] = i
-		 Pint[i] = len(power[power > i])
-
+		Int[i] = i
+		Pint[i] = len(power[power > i])
+	# Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
+	Int2[0] = max(P30)
+	Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
+	for i in range(1,steps):
+		print('Berechne max. Leistung für %d min (bis %d)...' % (i*step_size/60, max_interval/60), end='\r')
+		Psmooth = smooth(power,i*step_size)
+		Int2[i] = max(Psmooth)
+		Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
+	print('\nFertig!')
 
 	plt.xkcd()
 	fig = plt.figure()
@@ -795,7 +814,8 @@ if CP == 1:
 	plt.xlabel('Intervall (min)')
 	plt.ylabel('Leistung (W)')
 	# ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
-	ax.plot(np.divide(Pint[lower_Plimit:-1],60),Int[lower_Plimit:-1],lw=2, color="blue", label = "Critical Power")
+	ax.plot(np.divide(Pint[lower_Plimit:-1],60),Int[lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
+	ax.plot(np.divide(Pint2,60),Int2,lw=2, color="green", label = "Critical Power, Method 2")
 	ax.legend(loc='best')
 
 	plt.show()
