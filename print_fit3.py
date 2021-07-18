@@ -241,7 +241,7 @@ for Laps in fitfile.get_messages('lap'):
 		if record_data.name == "total_distance":
 			Runden[-1].x = record_data.value
 		if record_data.name == "avg_speed":
-			Runden[-1].speed = record_data.value*3.6/1000
+			Runden[-1].speed = record_data.value*3.6
 		if record_data.name == "total_timer_time":
 			Runden[-1].zeit = record_data.value
 		if record_data.name == "total_elapsed_time":
@@ -257,7 +257,7 @@ for Laps in fitfile.get_messages('lap'):
 		if record_data.name == "total_ascent":
 			Runden[-1].anstieg = record_data.value
 		if record_data.name == "max_speed":
-			Runden[-1].v_max = record_data.value*3.6/1000
+			Runden[-1].v_max = record_data.value*3.6
 		if record_data.units:
 			print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
 		else:
@@ -345,7 +345,7 @@ for Summary in fitfile.get_messages('session'):
 		if record_data.name == "total_distance":
 			strecke = record_data.value
 		if record_data.name == "avg_speed":
-			avspeed = record_data.value*3.6/1000
+			avspeed = record_data.value*3.6
 		if record_data.name == "total_timer_time":
 			zeit = record_data.value
 		if record_data.name == "avg_heart_rate":
@@ -357,7 +357,7 @@ for Summary in fitfile.get_messages('session'):
 		if record_data.name == "total_discent":
 			abstieg = record_data.value
 		if record_data.name == "max_speed":
-			v_max = record_data.value*3.6/1000
+			v_max = record_data.value*3.6
 		if record_data.name == "total_calories":
 			kCal = record_data.value
 		if record_data.name == "total_work":
