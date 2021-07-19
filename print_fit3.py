@@ -508,8 +508,9 @@ powt   = [e if e != None else 0 for e in powt]
 powt   = smooth(powt,smooth_Pprint)
 Pprint = smooth(power,smooth_Pprint)
 P30    = smooth(power,smooth_P30)
-NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
-print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (NP,NPcalc))
+if any(P30 > 0):
+	NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
+	print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (NP,NPcalc))
 
 if (NP == 0):
 	if (af == 0):
@@ -520,6 +521,13 @@ if (NP == 0):
 else:
     tss = (NP/float(FTP)*zeit/3600*100)
 print("TSS = %d" % (tss))
+if not('kCal' in locals()):
+	if (af > 0):
+		print("Kein KCal Wert vom Gerät, schätze kCal aus avHF und Zeit")
+		kCal = int(af*zeit/3600*4.431)
+	else:
+		print("Kein KCal und keine HF verfügbar Wert vom Gerät, schätze kCal aus tss")
+		kCal = tss*7.623
 
 stretch_power = 1
 if max(Pprint) > 0:
@@ -785,7 +793,7 @@ if plot_pause == 1:
 	plt.show()
 
 # Critical Power:
-if CP == 1:
+if (CP == 1) and any(power > 0):
 	steps = 30
 	max_interval = 300*60
 	step_size = int(max_interval/steps)
