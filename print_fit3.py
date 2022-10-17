@@ -108,8 +108,14 @@ tT    = []
 # Get all data messages that are of type record
 for record in fitfile.get_messages('record'):
 	# Go through all the data entries in this record
-	x.append(record.get_value('distance'))
+	if (record.get_value('distance') != None):
+		x.append(record.get_value('distance'))
+	else:
+		x.append(x[-1])
 	T.append(record.get_value('temperature'))
+	#if type(record.get_value('timestamp')) == int:
+	#	zs = datetime_to_local(datetime.fromtimestamp(record.get_value('timestamp')))
+	#else:
 	zs = datetime_to_local(record.get_value('timestamp'))
 	temp = zs.second + zs.minute*60 + zs.hour*3600
 	try:
@@ -180,6 +186,15 @@ if debug_print == 1:
 				print(" * %s: %s" % (record_data.name, record_data.value))
 		print()
 	
+	for record in fitfile.get_messages('event'):
+		for record_data in record:
+			if record_data.units:
+				print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
+			# Print the records name and value (and units if it has any)
+			else:
+				print(" * %s: %s" % (record_data.name, record_data.value))
+		print()
+
 # test what event stands for (SRM makes event for every stop)
 # ereignis = []
 # for event in fitfile.get_messages('event'):
@@ -278,6 +293,7 @@ for Laps in fitfile.get_messages('lap'):
 Zwischen = []
 Alle     = Runden[:]
 i = 0
+a = 0
 if len(Runden) > 0:
 	if (Runden[0].x_start - x[0]) > schwelle_zwischen:
 		Zwischen.append(rstruct())
@@ -290,6 +306,7 @@ if len(Runden) > 0:
 		Zwischen[-1].x = Runden[0].x_start
 		Zwischen[-1].zeit = Runden[0].z_start
 		Alle.insert(0,Zwischen[-1])
+		a = 1
 	if len(Runden) > 1:
 		for i in range(1,len(Runden)):
 			if (Runden[i].x_start - Runden[i-1].x_end) > schwelle_zwischen:
@@ -302,12 +319,12 @@ if len(Runden) > 0:
 				Zwischen[-1].t_end = Runden[i].t_start
 				Zwischen[-1].x_start = Runden[i-1].x_end
 				Zwischen[-1].x_end = Runden[i].x_start
-				Alle.insert(i,Zwischen[-1])
+				Alle.insert(i + a,Zwischen[-1])
 	if (x[-1] - Runden[-1].x_end) > schwelle_zwischen:
 		Zwischen.append(rstruct())
 		Zwischen[-1].x = x[-1] - Runden[-1].x_end
 		Zwischen[-1].z_start = Runden[-1].z_end
-		Zwischen[-1].z_end = len(hf)
+		Zwischen[-1].z_end = len(tspeed) # =len(hf)???
 		Zwischen[-1].t_start = Runden[-1].t_end
 		Zwischen[-1].t_end = t[-1]
 		Zwischen[-1].zeit = len(tspeed) - Runden[-1].z_end
