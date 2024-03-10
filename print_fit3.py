@@ -252,13 +252,14 @@ for Laps in fitfile.get_messages('lap'):
 			Runden[-1].t_end = temp
 			idx = (np.abs(np.asarray(t) - temp)).argmin()
 			Runden[-1].z_end = idx
+			Runden[-1].zeit = Runden[-1].z_end - Runden[-1].z_start
 			Runden[-1].x_end = x[idx]
 		if record_data.name == "total_distance":
 			Runden[-1].x = record_data.value
 		if record_data.name == "avg_speed":
 			Runden[-1].speed = record_data.value*3.6
-		if record_data.name == "total_timer_time":
-			Runden[-1].zeit = record_data.value
+		#if record_data.name == "total_timer_time":
+			#Runden[-1].zeit = record_data.value
 		if record_data.name == "total_elapsed_time":
 			Runden[-1].gzeit = record_data.value
 		if record_data.name == "avg_heart_rate":
@@ -320,6 +321,7 @@ if len(Runden) > 0:
 				Zwischen[-1].x_start = Runden[i-1].x_end
 				Zwischen[-1].x_end = Runden[i].x_start
 				Alle.insert(i + a,Zwischen[-1])
+				a = a + 1
 	if (x[-1] - Runden[-1].x_end) > schwelle_zwischen:
 		Zwischen.append(rstruct())
 		Zwischen[-1].x = x[-1] - Runden[-1].x_end
@@ -477,7 +479,7 @@ elif hersteller == "bryton":
 				system = config['System']
 				trip2_str =('Trip2%d_km' % (id))
 				km[bike_id] = system[trip2_str]
-if hersteller == "garmin":
+elif hersteller == "garmin":
 	for Summary in fitfile.get_messages('session'):
 		for record_data in Summary:
 			if record_data.name == "unknown_110":
@@ -561,6 +563,21 @@ while max(T)*stretch_T > (max_hf*1.1):
 	stretch_T = stretch_T/2
 print ("stretch_temperature: " + str(stretch_T))
 
+############## Plots:
+try:
+	cad = np.array(cad)
+	cad[cad > 130] = None
+	cad[cad < 30] = None
+	gnd = min(alt) - min(alt)%50
+except:
+	print("Keine Kadenz verfuegbar")
+
+stretch_speed = 1
+if max(speed) > 0:
+	while max(speed)*stretch_speed < max_hf/2*1.1:
+		stretch_speed = stretch_speed*2
+
+print("stretch_speed: " + str(stretch_speed))
 
 TB = np.zeros(len(zonen)+1)
 strZonen  = " "
@@ -586,52 +603,6 @@ for i in range(0,(len(zonen))):
   sz = TB[i] - hz*3600 - mz*60
   print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + messageZ)
   strZonen = ("%s %2d:%2d:%2d;" % (strZonen,hz,mz,sz))
-
-rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (strecke/1000,avspeed,h,m,s,v_max,kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,NP,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
-for i in range(0,len(Alle)):
-	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Alle[i].x/1000, Alle[i].speed,Alle[i].h,Alle[i].m,Alle[i].s,Alle[i].HF,Alle[i].power,Alle[i].anstieg,Alle[i].v_max))
-rstr = rstr.replace('.',',')
-rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
-
-print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
-print(rstr)
-print(">")
-
-ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
-for i in range(0,len(Runden)):
-	ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
-ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;Kad;hm;tss;stress;" + (((str(raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
-for i in range(0,len(Runden)):
-	ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
-
-if (print_csv == 1):
-	#csvdatei = ("%s.csv" % (startzeit.strftime("%y%m%d%H%M")))
-	file = open(csvdatei,"w")
-	#file.write("\"sep=;\"\r\n")
-	file.write(ueberschrift1 + "\r\n")
-	file.write(ueberschrift2 + "\r\n")
-	file.write(rstr)
-	file.close
-
-############## Plots:
-try:
-	cad = np.array(cad)
-	cad[cad > 130] = None
-	cad[cad < 30] = None
-	gnd = min(alt) - min(alt)%50
-except:
-	print("Keine Kadenz verfuegbar")
-
-stretch_speed = 1
-if max(speed) > 0:
-	while max(speed)*stretch_speed < max_hf/2*1.1:
-		stretch_speed = stretch_speed*2
-
-print("stretch_speed: " + str(stretch_speed))
-print("Fuer die Korrektur: ")
-print(strZonen)
-print(">")
 
 fen1.destroy()
 
@@ -733,13 +704,13 @@ if plot_zeit == 1:
 	  #ax.text(np.mean([pos[i]/3600,sum(Runden[i].zeit)/3600]), 170,("Runde %d"%(i+1)),color='y')
 	for i in range(0,len(Runden)):
 	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 170,("Runde %d"%(i+1)),color='y')
-	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 161,("%d km"%(Runden[i].speed)),color='y')
+	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 161,("%d km/h"%(Runden[i].speed)),color='y')
 	  ax.text(np.mean([Runden[i].s_zeitlinie,Runden[i].e_zeitlinie]), 152,("%02d:%02d:%02d" % (Runden[i].h,Runden[i].m,Runden[i].s)),color='y')
 	  ax.vlines(Runden[i].s_zeitlinie,[0],[200],lw=2,color='y')
 	  ax.vlines(Runden[i].e_zeitlinie,[0],[200],lw=2,color='y')
 	for i in range(0,len(Zwischen)):
 		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 170,("Zwischen %d"%(i+1)),color='y')
-		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 161,("%d km"%(Zwischen[i].x/1000)),color='y')
+		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 161,("%d km/h"%(Zwischen[i].speed)),color='y')
 		ax.text(np.mean([Zwischen[i].z_start,Zwischen[i].z_end])/3600, 152,("%02d:%02d:%02d" % (Zwischen[i].h,Zwischen[i].m,Zwischen[i].s)),color='y')
 
 	plt.xlabel('Time (h)')
@@ -809,20 +780,22 @@ if plot_pause == 1:
 
 	plt.show()
 
-# Critical Power:
+############### Critical Power:  ######################################################
+CP30 = 0
 if (CP == 1) and any(power > 0):
 	steps = 30
-	max_interval = 300*60
-	step_size = int(max_interval/steps)
 	Int   = [0]*int(max(power))
 	Pint  = [0]*int(max(power))
-	Int2  = [0]*len(range(1,steps+1))
-	Pint2 = [0]*len(range(1,steps+1))
 	# Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
 	for i in range(lower_Plimit,len(Pint)):
 		Int[i] = i
 		Pint[i] = len(power[power > i])
 	# Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
+	steps = 15
+	max_interval = 150*60
+	step_size = int(max_interval/steps)
+	Int2  = [0]*len(range(1,steps+1))
+	Pint2 = [0]*len(range(1,steps+1))
 	Int2[0] = max(P30)
 	Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
 	for i in range(1,steps):
@@ -830,7 +803,9 @@ if (CP == 1) and any(power > 0):
 		Psmooth = smooth(power,i*step_size)
 		Int2[i] = max(Psmooth)
 		Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
-	print('\nFertig!')
+	print('\nFertig!\n')
+	CP30 = Int2[3-1]
+	print('CP30 = %d' % (CP30))
 
 	plt.xkcd()
 	fig = plt.figure()
@@ -840,7 +815,37 @@ if (CP == 1) and any(power > 0):
 	plt.ylabel('Leistung (W)')
 	# ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
 	ax.plot(np.divide(Pint[lower_Plimit:-1],60),Int[lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
-	ax.plot(np.divide(Pint2,60),Int2,lw=2, color="green", label = "Critical Power, Method 2")
+	ax.plot(np.divide(Pint2,60),Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
 	ax.legend(loc='best')
 
 	plt.show()
+
+############### Print für Tabelle:  ######################################################
+
+rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (strecke/1000,avspeed,h,m,s,v_max,kCal))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,NP,CP30,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
+for i in range(0,len(Alle)):
+	rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Alle[i].x/1000, Alle[i].speed,Alle[i].h,Alle[i].m,Alle[i].s,Alle[i].HF,Alle[i].power,Alle[i].anstieg,Alle[i].v_max))
+rstr = rstr.replace('.',',')
+rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
+
+print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
+print(rstr)
+print(">")
+
+ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
+for i in range(0,len(Runden)):
+	ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
+ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
+for i in range(0,len(Runden)):
+	ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
+
+if (print_csv == 1):
+	#csvdatei = ("%s.csv" % (startzeit.strftime("%y%m%d%H%M")))
+	file = open(csvdatei,"w")
+	#file.write("\"sep=;\"\r\n")
+	file.write(ueberschrift1 + "\r\n")
+	file.write(ueberschrift2 + "\r\n")
+	file.write(rstr)
+	file.close
+
