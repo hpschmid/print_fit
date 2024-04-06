@@ -38,14 +38,25 @@ max_hf = 180 # for scaling the plots
 schwelle_zwischen =  3000
 
 debug_print = 0 # show all records for debugging purposes
-print_csv   = 0 # generate .csv file with result
 plot_weg    = 1 # plot data vs. distance
 plot_zeit   = 1 # plot data vs. time
 plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
 plot_hoehe  = 1 # plot altitude profile
 CP          = 1 # calculate critical power?
+plot_bar    = 1 # Runden-Barplot?
+print_csv   = 0 # generate .csv file with result
 Fitness     = 0 # correction of heart rate (for bad days)
 bike_id     = 1 # default bike profile in case it can't be read from file
+
+################ check arguments: #################################################################
+if len(sys.argv) > 1:
+	plot_weg    = int(sys.argv[1])
+	if len(sys.argv) > 2:
+		plot_zeit   = int(sys.argv[2])
+		if len(sys.argv) > 3:
+			plot_pause  = int(sys.argv[3])
+			if len(sys.argv) > 4:
+				CP  = int(sys.argv[4])
 ####################################################################################################
 
 def smooth(y, box_pts):
@@ -819,6 +830,7 @@ if (CP == 1) and any(power > 0):
 	ax.legend(loc='best')
 
 	plt.show()
+
 
 ############### Print für Tabelle:  ######################################################
 
