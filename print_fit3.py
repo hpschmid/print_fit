@@ -10,7 +10,7 @@
 
 from __future__ import division
 from fitparse   import FitFile
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes # , zoomed_inset_axes
 # from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from datetime import timezone
@@ -396,7 +396,7 @@ for Summary in fitfile.get_messages('session'):
         if record_data.name == "avg_cadence":
             kadenz = record_data.value
         if record_data.name == "start_time":
-            startzeit = record_data.value
+            startzeit = datetime_to_local(record_data.value)
         if record_data.name == "sport":
             sport = record_data.value
         if record_data.units:
@@ -508,8 +508,6 @@ print()
 if NP is None:
   NP = 0
 
-startzeit  = datetime_to_local(startzeit)
-
 h = np.floor(zeit/3600)
 m = np.floor((zeit - h*3600)/60)
 s = zeit - h*3600 - m*60
@@ -615,10 +613,14 @@ for i in range(0,(len(zonen))):
 fen1.destroy()
 
 ################# Nach Weg: ###########################################################################
-
+fenster = [19.5, 10]
 if plot_weg == 1:
     plt.xkcd()
-    fig = plt.figure()
+    fig = plt.figure(figsize=fenster)
+    # manager = plt.get_current_fig_manager()
+    # manager.window.maximize() # does not work??
+    # mng = plt.get_current_fig_manager()
+    # mng.resize(*mng.window.maximize()) # maximizes over all screens
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
@@ -696,8 +698,7 @@ if plot_weg == 1:
 
 if plot_zeit == 1:
     plt.xkcd()
-
-    fig = plt.figure()
+    fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
@@ -748,8 +749,7 @@ if plot_zeit == 1:
 
 if plot_pause == 1:
     plt.xkcd()
-
-    fig = plt.figure()
+    fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
@@ -816,7 +816,7 @@ if (CP == 1) and any(power > 0):
     print('CP30 = %d' % CP30)
 
     plt.xkcd()
-    fig = plt.figure()
+    fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.grid(color='k', linestyle=':', linewidth=1)
     plt.xlabel('Intervall (min)')
@@ -843,7 +843,7 @@ if (len(Runden) > 0) & (plot_bar == 1):
         bar_h[i] = Alle[i].anstieg
 
     plt.xkcd()
-    fig = plt.figure()
+    fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.grid(color='k', linestyle=':', linewidth=1)
     plt.xlabel('Runde')
