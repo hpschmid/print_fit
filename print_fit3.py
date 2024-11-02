@@ -13,8 +13,7 @@ from fitparse   import FitFile
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes # , zoomed_inset_axes
 # from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-from datetime   import datetime
-import time
+from datetime import timezone
 import numpy as np
 import sys
 import os
@@ -22,7 +21,6 @@ from tkinter import *
 from tkinter import filedialog
 from cycler import cycler
 import glob
-# from operator import add
 
 ###################################### Settings ####################################################
 zonen = [0,138,149,160,170] # HF zone limits
@@ -88,11 +86,8 @@ T.insert(END, "Wait a moment...\n")
 
 fen1.update()
 
-#fitfile = FitFile('171028094355.fit')
-
 def datetime_to_local(utc_datetime):
-    now_timestamp = time.time()
-    offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
+    offset = utc_datetime.replace(tzinfo=timezone.utc) - utc_datetime.astimezone(timezone.utc)
     return utc_datetime + offset
 
 x     = []
