@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*.zip
+*.bak
+
+*.fit
+!Beispiel_activity.fit
+*.ods
+!2021_Training_Beispiel.ods
+*.png
+!Plot.png
+!Kopieren.png
+!Einfuegen.png

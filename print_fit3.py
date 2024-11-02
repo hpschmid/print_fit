@@ -16,7 +16,7 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from datetime   import datetime
 import time
 import numpy as np
-#import sys
+import sys
 import os
 from tkinter import *
 from tkinter import filedialog
@@ -57,7 +57,7 @@ if len(sys.argv) > 1:
 			plot_pause  = int(sys.argv[3])
 			if len(sys.argv) > 4:
 				CP  = int(sys.argv[4])
-				if len(sys.argv) > 4:
+				if len(sys.argv) > 5:
 					plot_bar  = int(sys.argv[5])
 ####################################################################################################
 
@@ -834,40 +834,40 @@ if (CP == 1) and any(power > 0):
 	plt.show()
 
 ############### Barplot:            ######################################################
+if (len(Runden) > 0) & (plot_bar == 1):
+	bar_r = np.zeros(len(Alle))
+	bar_x = np.zeros(len(Alle))
+	bar_v = np.zeros(len(Alle))
+	bar_p = np.zeros(len(Alle))
+	bar_h = np.zeros(len(Alle))
+	for i in range(0,len(Alle)):
+		bar_r[i] = i+1
+		bar_x[i] = Alle[i].x/1000
+		bar_v[i] = Alle[i].speed
+		bar_p[i] = Alle[i].power
+		bar_h[i] = Alle[i].anstieg
 
-bar_r = np.zeros(len(Alle))
-bar_x = np.zeros(len(Alle))
-bar_v = np.zeros(len(Alle))
-bar_p = np.zeros(len(Alle))
-bar_h = np.zeros(len(Alle))
-for i in range(0,len(Alle)):
-	bar_r[i] = i+1
-	bar_x[i] = Alle[i].x/1000
-	bar_v[i] = Alle[i].speed
-	bar_p[i] = Alle[i].power
-	bar_h[i] = Alle[i].anstieg
+	plt.xkcd()
+	fig = plt.figure()
+	ax = fig.add_subplot(1, 1, 1)
+	ax.grid(color='k', linestyle=':', linewidth=1)
+	plt.xlabel('Runde')
+	plt.ylabel('km, km/h')
+	ax.bar(bar_r-0.3,bar_x,0.2,lw=2, color="orange", label = "km")
+	ax.bar(bar_r-0.1,bar_v,0.2,lw=2, color="blue", label = "km/h")
+	ax.bar(bar_r+0.1,np.zeros(len(Alle)),0.2,lw=2, color="m", label = "Leistung")
+	ax.bar(bar_r+0.3,np.zeros(len(Alle)),0.2,lw=2, color="grey", label = "Anstieg")
+	plt.xticks(bar_r)
+	ax.legend(loc='best')
 
-plt.xkcd()
-fig = plt.figure()
-ax = fig.add_subplot(1, 1, 1)
-ax.grid(color='k', linestyle=':', linewidth=1)
-plt.xlabel('Runde')
-plt.ylabel('km, km/h')
-ax.bar(bar_r-0.3,bar_x,0.2,lw=2, color="orange", label = "km")
-ax.bar(bar_r-0.1,bar_v,0.2,lw=2, color="blue", label = "km/h")
-ax.bar(bar_r+0.1,np.zeros(len(Alle)),0.2,lw=2, color="m", label = "Leistung")
-ax.bar(bar_r+0.3,np.zeros(len(Alle)),0.2,lw=2, color="grey", label = "Anstieg")
-plt.xticks(bar_r)
-ax.legend(loc='best')
+	ax2 = ax.twinx()
+	# ax2.set_prop_cycle(cycler('color', ['k']))
+	ax2.set_ylabel('W, hm')
+	ax2.bar(bar_r+0.1,bar_p,0.2,lw=2, color="m", label = "Leistung")
+	ax2.bar(bar_r+0.3,bar_h,0.2,lw=2, color="grey", label = "Anstieg")
+	ax.legend(loc='best')
 
-ax2 = ax.twinx()
-# ax2.set_prop_cycle(cycler('color', ['k']))
-ax2.set_ylabel('W, hm')
-ax2.bar(bar_r+0.1,bar_p,0.2,lw=2, color="m", label = "Leistung")
-ax2.bar(bar_r+0.3,bar_h,0.2,lw=2, color="grey", label = "Anstieg")
-ax.legend(loc='best')
-
-plt.show()
+	plt.show()
 
 ############### Print für Tabelle:  ######################################################
 
