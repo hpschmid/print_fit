@@ -23,32 +23,23 @@ from tkinter import filedialog
 from cycler import cycler
 import glob
 from Konstanten import *
+from Ausfahrt import *
 
 ###################################### Settings ####################################################
 const = Konstanten()
-
-debug_print = 0 # show all records for debugging purposes
-plot_weg    = 1 # plot data vs. distance
-plot_zeit   = 1 # plot data vs. time
-plot_pause  = 1 # plot data vs. time including pauses (plot vs. Uhrzeit)
-plot_hoehe  = 1 # plot altitude profile
-CP          = 1 # calculate critical power?
-plot_bar    = 1 # Runden-Barplot?
-print_csv   = 0 # generate .csv file with result
-Fitness     = 0 # correction of heart rate (for bad days)
-bike_id     = 1 # default bike profile in case it can't be read from file
+args = Argumente()
 
 ################ check arguments: #################################################################
 if len(sys.argv) > 1:
-    plot_weg    = int(sys.argv[1])
+    args.plot_weg    = int(sys.argv[1])
     if len(sys.argv) > 2:
-        plot_zeit   = int(sys.argv[2])
+        args.plot_zeit   = int(sys.argv[2])
         if len(sys.argv) > 3:
-            plot_pause  = int(sys.argv[3])
+            args.plot_pause  = int(sys.argv[3])
             if len(sys.argv) > 4:
-                CP  = int(sys.argv[4])
+                args.CP  = int(sys.argv[4])
                 if len(sys.argv) > 5:
-                    plot_bar  = int(sys.argv[5])
+                    args.plot_bar  = int(sys.argv[5])
 ####################################################################################################
 
 def smooth(y, box_pts):
@@ -69,7 +60,7 @@ name = filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=
 fitfile = FitFile(name)
 csvdatei = name.replace('fit','csv')
 T.insert(END, "Parsing %s\n" % (os.path.basename(name)))
-if print_csv == 1:
+if args.print_csv == 1:
     T.insert(END, "Will create %s\n" % (os.path.basename(csvdatei)))
 else:
     T.insert(END, "\n")
@@ -176,7 +167,7 @@ for record in fitfile.get_messages('record'):
     except:
       pass
 
-if debug_print == 1:
+if args.debug_print == 1:
     for record in fitfile.get_messages('record'):
         for record_data in record:
             if record_data.units:
@@ -195,47 +186,10 @@ if debug_print == 1:
                 print(" * %s: %s" % (record_data.name, record_data.value))
         print()
 
-# test what event stands for (SRM makes event for every stop)
-# ereignis = []
-# for event in fitfile.get_messages('event'):
-# 	# Go through all the data entries in this record
-# 	for record_data in event:
-# 		if record_data.name == "timestamp":
-# 			print(" * %s: %s" % (record_data.name, record_data.value))
-# 			zs   = datetime_to_local(record_data.value)
-# 			temp = zs.second + zs.minute*60 + zs.hour*3600
-# 			ereignis.append(temp/3600)
-
-class rstruct:
-    x       = 0
-    x_start = 0
-    x_end   = 0
-    zeit    = 0 # Fahrzeit
-    t_start = 0 # t = Uhrzeit
-    t_end   = 0
-    z_start = 0
-    z_end   = 0
-    speed   = 0
-    h       = 0
-    m       = 0
-    s       = 0
-    gzeit   = 0 # Gesamtzeit
-    HF      = 0
-    power   = 0
-    anstieg = 0
-    v_max   = 0
-    pos     = 0
-    s_linie     = 0
-    s_zeitlinie = 0
-    s_pauslinie = 0
-    e_linie     = 0
-    e_zeitlinie = 0
-    e_pauslinie = 0
-
 Runden = []
 
 for Laps in fitfile.get_messages('lap'):
-    Runden.append(rstruct())
+    Runden.append(Runde())
     print("Runde " + str(len(Runden)))
     for record_data in Laps:
         if record_data.name == "start_time":
@@ -297,7 +251,7 @@ i = 0
 a = 0
 if len(Runden) > 0:
     if (Runden[0].x_start - x[0]) > const.schwelle_zwischen:
-        Zwischen.append(rstruct())
+        Zwischen.append(Runde())
         Zwischen[-1].x_start = x[0]
         Zwischen[-1].x_end = Runden[0].x_start
         Zwischen[-1].z_start = 0
@@ -311,7 +265,7 @@ if len(Runden) > 0:
     if len(Runden) > 1:
         for i in range(1,len(Runden)):
             if (Runden[i].x_start - Runden[i-1].x_end) > const.schwelle_zwischen:
-                Zwischen.append(rstruct())
+                Zwischen.append(Runde())
                 Zwischen[-1].x = Runden[i].x_start - Runden[i-1].x_end
                 Zwischen[-1].zeit = Runden[i].z_start - Runden[i-1].z_end
                 Zwischen[-1].z_start = Runden[i-1].z_end
@@ -323,7 +277,7 @@ if len(Runden) > 0:
                 Alle.insert(i + a,Zwischen[-1])
                 a = a + 1
     if (x[-1] - Runden[-1].x_end) > const.schwelle_zwischen:
-        Zwischen.append(rstruct())
+        Zwischen.append(Runde())
         Zwischen[-1].x = x[-1] - Runden[-1].x_end
         Zwischen[-1].z_start = Runden[-1].z_end
         Zwischen[-1].z_end = len(tspeed) # =len(hf)???
@@ -406,13 +360,13 @@ for file_id in fitfile.get_messages('file_id'):
 km = [0,0,0,0,0]
 bike = "Default"
 id_final = 1
-bike_id = 1
+args.bike_id = 1
 if hersteller == "srm":
     for bike_profile in fitfile.get_messages('bike_profile'):
         for record_data in bike_profile:
             if record_data.name == "name":
                 bike = record_data.value
-                bike_id = int(bike[-1])
+                args.bike_id = int(bike[-1])
 
                 totfile = FitFile('Totals.fit')
                 for totals in totfile.get_messages('unknown_65292'):
@@ -422,8 +376,8 @@ if hersteller == "srm":
                             #print(" * %s: %s" % (record_data.name, record_data.value))
                         if record_data.name == "unknown_3":
                             km[id_final] = record_data.value / 1000
-                bike = const.raeder[bike_id - 1]
-                id_final = bike_id
+                bike = const.raeder[args.bike_id - 1]
+                id_final = args.bike_id
 
 # Bei Igpsport finde ich keinen Hinweise auf Radprofil, kann über Gewicht unterscheiden (alternativ Sensor-Id):
 elif hersteller == "igpsport":
@@ -433,34 +387,34 @@ elif hersteller == "igpsport":
             if record_data.name == "bike_weight":
                 bike_weight = record_data.value
                 if bike_weight == 8:
-                    bike_id = 1
+                    args.bike_id = 1
                 elif bike_weight == 6:
-                    bike_id = 2
+                    args.bike_id = 2
                 elif bike_weight == 7:
-                    bike_id = 3
+                    args.bike_id = 3
                 else:
-                    bike_id = 4
-                id_final = bike_id
-                bike = const.raeder[bike_id - 1]
+                    args.bike_id = 4
+                id_final = args.bike_id
+                bike = const.raeder[args.bike_id - 1]
     for totals in totfile.get_messages('bike_profile'):
         for record_data in totals:
             if record_data.name == "odometer":
-                km[bike_id] = record_data.value/1000
+                km[args.bike_id] = record_data.value/1000
 
 elif hersteller == "bryton":
     for bike_profile in fitfile.get_messages('unknown_68'):
         for record_data in bike_profile:
             if record_data.name == "unknown_7":
                 id_final = record_data.value
-                bike_id = id_final
+                args.bike_id = id_final
                 bike = const.raeder[0]
                 if id_final == 2:
-                    bike_id = 3
+                    args.bike_id = 3
                 elif id_final == 0x10:
-                    bike_id = 2
+                    args.bike_id = 2
                 elif id_final == 0x20:
-                    bike_id = 4
-                bike = const.raeder[bike_id - 1]
+                    args.bike_id = 4
+                bike = const.raeder[args.bike_id - 1]
                 #Beim Rider 450 ist 0x10 Rad 1 und 0x20 Rad 2, daher:
                 if id_final > 2:
                     id_final = id_final >> 4
@@ -478,21 +432,21 @@ elif hersteller == "bryton":
                 config.read	("System.ini")
                 system = config['System']
                 trip2_str =('Trip2%d_km' % id_final)
-                km[bike_id] = system[trip2_str]
+                km[args.bike_id] = system[trip2_str]
 elif hersteller == "garmin":
     for Summary in fitfile.get_messages('session'):
         for record_data in Summary:
             if record_data.name == "unknown_110":
                 bike = record_data.value
             if record_data.name == "unknown_178":
-                km[bike_id] = record_data.value
+                km[args.bike_id] = record_data.value
 else:
     print('Hersteller nicht implementiert, kann Odometer nicht lesen')
 
 kmstr = [' ;',' ;',' ;',' ;',' ;',' ;']
-kmstr[bike_id] = ("%s;" % str(km[bike_id]))
+kmstr[args.bike_id] = ("%s;" % str(km[args.bike_id]))
 kmstr = ('%s%s%s%s%s%s' % (kmstr[0],kmstr[1],kmstr[2],kmstr[3],kmstr[4],kmstr[5]))
-print("Rad: %s  (id: %d), Kilometerstand: %s" % (bike, id_final, str(km[bike_id])))
+print("Rad: %s  (id: %d), Kilometerstand: %s" % (bike, id_final, str(km[args.bike_id])))
 print("===============")
 print()
 
@@ -508,7 +462,7 @@ pausenzeit = totalzeit - zeit
 hp = np.floor(pausenzeit/3600)
 mp = np.floor((pausenzeit - hp*3600)/60)
 sp = pausenzeit - hp*3600 - mp*60
-#hf = list(map(add, hf, [Fitness]*len(hf)))
+#hf = list(map(add, hf, [args.Fitness]*len(hf)))
 
 # Replace all 'None' by 0s and calc. mean excluding zeros:
 hf    = np.array([e if e is not None else 0 for e in hf])
@@ -606,7 +560,7 @@ fen1.destroy()
 
 ################# Nach Weg: ###########################################################################
 fenster = [19.5, 10]
-if plot_weg == 1:
+if args.plot_weg == 1:
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
     # manager = plt.get_current_fig_manager()
@@ -656,7 +610,7 @@ if plot_weg == 1:
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     ax.hlines(const.zonen,[0],[max(x)/1000],lw=1,colors='r')
     ax.hlines(const.tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
-    if plot_hoehe == 1:
+    if args.plot_hoehe == 1:
         ax2.plot(np.divide(xalt,1000),alt,lw=1)
     ax2.set_xlim([0,max(x)/1000])
 
@@ -688,7 +642,7 @@ if plot_weg == 1:
 
 ################# Nach Zeit (ohne Pausen): ###########################################################################
 
-if plot_zeit == 1:
+if args.plot_zeit == 1:
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
@@ -728,7 +682,7 @@ if plot_zeit == 1:
     ax.plot(np.linspace(0,len(hf)/3600,len(hf)),hf, label="HF")
     ax.plot(np.linspace(0,len(Pprint)/3600,len(Pprint)),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    if plot_hoehe == 1:
+    if args.plot_hoehe == 1:
         ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     ax.set_xlim([0,len(speed)/3600])
 
@@ -739,7 +693,7 @@ if plot_zeit == 1:
 
 ################# Nach Uhrzeit: ###########################################################################
 
-if plot_pause == 1:
+if args.plot_pause == 1:
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
@@ -771,7 +725,7 @@ if plot_pause == 1:
     ax.plot(tpow,np.multiply(powt,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
-    if plot_hoehe == 1:
+    if args.plot_hoehe == 1:
         ax2.plot(talt,altt,lw=1)
     ax.set_xlim([t[0]/3600,t[-1]/3600])
 
@@ -781,8 +735,8 @@ if plot_pause == 1:
     plt.show()
 
 ############### Critical Power:  ######################################################
-CP30 = 0
-if (CP == 1) and any(power > 0):
+args.CP30 = 0
+if (args.CP == 1) and any(power > 0):
     steps = 30
     Int   = [0]*int(max(power))
     Pint  = [0]*int(max(power))
@@ -804,8 +758,8 @@ if (CP == 1) and any(power > 0):
         Int2[i] = max(Psmooth)
         Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     print('\nFertig!\n')
-    CP30 = Int2[3-1]
-    print('CP30 = %d' % CP30)
+    args.CP30 = Int2[3-1]
+    print('CP30 = %d' % args.CP30)
 
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
@@ -821,7 +775,7 @@ if (CP == 1) and any(power > 0):
     plt.show()
 
 ############### Barplot:            ######################################################
-if (len(Runden) > 0) & (plot_bar == 1):
+if (len(Runden) > 0) & (args.plot_bar == 1):
     bar_r = np.zeros(len(Alle))
     bar_x = np.zeros(len(Alle))
     bar_v = np.zeros(len(Alle))
@@ -859,11 +813,11 @@ if (len(Runden) > 0) & (plot_bar == 1):
 ############### Print für Tabelle:  ######################################################
 
 rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (strecke/1000,avspeed,h,m,s,v_max,kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,NP,CP30,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr,af,NP,args.CP30,ac,anstieg,tss,kmstr,hp,mp,sp,strZonen))
 for i in range(0,len(Alle)):
     rstr = (rstr+" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (Alle[i].x/1000, Alle[i].speed,Alle[i].h,Alle[i].m,Alle[i].s,Alle[i].HF,Alle[i].power,Alle[i].anstieg,Alle[i].v_max))
 rstr = rstr.replace('.',',')
-rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
+rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (startzeit.day,startzeit.month,args.bike_id,startzeit.hour,startzeit.minute,startzeit.second,rstr))
 
 print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
 print(rstr)
@@ -876,7 +830,7 @@ ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leis
 for i in range(0,len(Runden)):
     ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
-if print_csv == 1:
+if args.print_csv == 1:
     #csvdatei = ("%s.csv" % (startzeit.strftime("%y%m%d%H%M")))
     file = open(csvdatei,"w")
     #file.write("\"sep=;\"\r\n")
