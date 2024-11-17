@@ -22,19 +22,10 @@ from tkinter import *
 from tkinter import filedialog
 from cycler import cycler
 import glob
+from Konstanten import *
 
 ###################################### Settings ####################################################
-zonen = [0,138,149,160,170] # HF zone limits
-FTP   = 255
-lower_Plimit = int(FTP/2)
-raeder = ('MTB','2er','Poison','Sab','Leihrad') # Bike names
-#[0.81,0.9,0.94,1,1.03,1.07]
-#tbPow = np.multiply([0,0.53,0.71,0.86,1],float(FTP))
-tbPow = np.multiply([0,0.55,0.75,0.9,1.05],float(FTP)) # Power zones
-smooth_Pprint = 600 # 
-smooth_P30 = 30
-max_hf = 180 # for scaling the plots
-schwelle_zwischen =  3000
+const = Konstanten()
 
 debug_print = 0 # show all records for debugging purposes
 plot_weg    = 1 # plot data vs. distance
@@ -305,7 +296,7 @@ Alle     = Runden[:]
 i = 0
 a = 0
 if len(Runden) > 0:
-    if (Runden[0].x_start - x[0]) > schwelle_zwischen:
+    if (Runden[0].x_start - x[0]) > const.schwelle_zwischen:
         Zwischen.append(rstruct())
         Zwischen[-1].x_start = x[0]
         Zwischen[-1].x_end = Runden[0].x_start
@@ -319,7 +310,7 @@ if len(Runden) > 0:
         a = 1
     if len(Runden) > 1:
         for i in range(1,len(Runden)):
-            if (Runden[i].x_start - Runden[i-1].x_end) > schwelle_zwischen:
+            if (Runden[i].x_start - Runden[i-1].x_end) > const.schwelle_zwischen:
                 Zwischen.append(rstruct())
                 Zwischen[-1].x = Runden[i].x_start - Runden[i-1].x_end
                 Zwischen[-1].zeit = Runden[i].z_start - Runden[i-1].z_end
@@ -331,7 +322,7 @@ if len(Runden) > 0:
                 Zwischen[-1].x_end = Runden[i].x_start
                 Alle.insert(i + a,Zwischen[-1])
                 a = a + 1
-    if (x[-1] - Runden[-1].x_end) > schwelle_zwischen:
+    if (x[-1] - Runden[-1].x_end) > const.schwelle_zwischen:
         Zwischen.append(rstruct())
         Zwischen[-1].x = x[-1] - Runden[-1].x_end
         Zwischen[-1].z_start = Runden[-1].z_end
@@ -431,7 +422,7 @@ if hersteller == "srm":
                             #print(" * %s: %s" % (record_data.name, record_data.value))
                         if record_data.name == "unknown_3":
                             km[id_final] = record_data.value / 1000
-                bike = raeder[bike_id - 1]
+                bike = const.raeder[bike_id - 1]
                 id_final = bike_id
 
 # Bei Igpsport finde ich keinen Hinweise auf Radprofil, kann über Gewicht unterscheiden (alternativ Sensor-Id):
@@ -450,7 +441,7 @@ elif hersteller == "igpsport":
                 else:
                     bike_id = 4
                 id_final = bike_id
-                bike = raeder[bike_id - 1]
+                bike = const.raeder[bike_id - 1]
     for totals in totfile.get_messages('bike_profile'):
         for record_data in totals:
             if record_data.name == "odometer":
@@ -462,14 +453,14 @@ elif hersteller == "bryton":
             if record_data.name == "unknown_7":
                 id_final = record_data.value
                 bike_id = id_final
-                bike = raeder[0]
+                bike = const.raeder[0]
                 if id_final == 2:
                     bike_id = 3
                 elif id_final == 0x10:
                     bike_id = 2
                 elif id_final == 0x20:
                     bike_id = 4
-                bike = raeder[bike_id - 1]
+                bike = const.raeder[bike_id - 1]
                 #Beim Rider 450 ist 0x10 Rad 1 und 0x20 Rad 2, daher:
                 if id_final > 2:
                     id_final = id_final >> 4
@@ -531,9 +522,9 @@ if np.isnan(ac):
 
 power = np.array([e if e is not None else 0 for e in power])
 powt   = [e if e is not None else 0 for e in powt]
-powt   = smooth(powt,smooth_Pprint)
-Pprint = smooth(power,smooth_Pprint)
-P30    = smooth(power,smooth_P30)
+powt   = smooth(powt,const.smooth_Pprint)
+Pprint = smooth(power,const.smooth_Pprint)
+P30    = smooth(power,const.smooth_P30)
 if any(P30 > 0):
     NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
     print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (NP,NPcalc))
@@ -543,9 +534,9 @@ if NP == 0:
         print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 80% Intensitaet")
         tss = int(zeit/3600*80)
     else:
-        tss = int(zeit/3600*af/zonen[4]*100)
+        tss = int(zeit/3600*af/const.zonen[4]*100)
 else:
-    tss = (NP/float(FTP)*zeit/3600*100)
+    tss = (NP/float(const.FTP)*zeit/3600*100)
 print("TSS = %d" % tss)
 if not('kCal' in locals()):
     if af > 0:
@@ -557,16 +548,16 @@ if not('kCal' in locals()):
 
 stretch_power = 1
 if max(Pprint) > 0:
-    while max(Pprint)*stretch_power < (max_hf/2*1.1):
+    while max(Pprint)*stretch_power < (const.max_hf/2*1.1):
         stretch_power = stretch_power*2
-    while max(Pprint)*stretch_power > (max_hf*1.1):
+    while max(Pprint)*stretch_power > (const.max_hf*1.1):
         stretch_power = stretch_power/2
     print ("stretch_power: " + str(stretch_power))
 
 stretch_T = 10
-while max(T)*stretch_T < (max_hf/2*1.1):
+while max(T)*stretch_T < (const.max_hf/2*1.1):
     stretch_T = stretch_T*2
-while max(T)*stretch_T > (max_hf*1.1):
+while max(T)*stretch_T > (const.max_hf*1.1):
     stretch_T = stretch_T/2
 print ("stretch_temperature: " + str(stretch_T))
 
@@ -581,29 +572,29 @@ except:
 
 stretch_speed = 1
 if max(speed) > 0:
-    while max(speed)*stretch_speed < max_hf/2*1.1:
+    while max(speed)*stretch_speed < const.max_hf/2*1.1:
         stretch_speed = stretch_speed*2
 
 print("stretch_speed: " + str(stretch_speed))
 
-TB = np.zeros(len(zonen)+1)
+TB = np.zeros(len(const.zonen)+1)
 strZonen  = " "
-#print(range(0,len(zonen)))
-for i in range(0,(len(zonen))):
-  if i == (len(zonen)-1):
+#print(range(0,len(const.zonen)))
+for i in range(0,(len(const.zonen))):
+  if i == (len(const.zonen)-1):
     if NP == 0:
-      TB[i] = sum(j > zonen[i]  for j in list(filter(None,hf)))
-      messageZ = ("(HF >%2d Schläge) " % (zonen[i]))
+      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None,hf)))
+      messageZ = ("(HF >%2d Schläge) " % (const.zonen[i]))
     else:
-      TB[i] = sum(j > tbPow[i]  for j in list(filter(None,P30)))
-      messageZ = ("(>%2d W) " % (tbPow[i]))
+      TB[i] = sum(j > const.tbPow[i]  for j in list(filter(None,P30)))
+      messageZ = ("(>%2d W) " % (const.tbPow[i]))
   else:
     if NP == 0:
-      TB[i] = sum(((j > zonen[i]) and (j <= zonen[i+1])) for j in list(filter(None,hf)))
-      messageZ = ("(HF %2d - %2d) " % (zonen[i],zonen[i+1]))
+      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None,hf)))
+      messageZ = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
     else:
-      TB[i] = sum(((j > tbPow[i]) and (j <= tbPow[i+1])) for j in list(filter(None,P30)))
-      messageZ = ("(%2d - %2d W) " % (tbPow[i],tbPow[i+1]))
+      TB[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,P30)))
+      messageZ = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
 
   hz = np.floor(TB[i]/3600)
   mz = np.floor((TB[i] - hz*3600)/60)
@@ -625,7 +616,7 @@ if plot_weg == 1:
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-    ax.set_ylim([0,max_hf])
+    ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
     plt.xlabel('Distance (km)')
     plt.ylabel('Cadence, Speed, HF')
@@ -663,8 +654,8 @@ if plot_weg == 1:
     ax.plot(np.divide(xhf,1000),hf, label="HF")
     ax.plot(np.divide(xpow,1000),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    ax.hlines(zonen,[0],[max(x)/1000],lw=1,colors='r')
-    ax.hlines(tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
+    ax.hlines(const.zonen,[0],[max(x)/1000],lw=1,colors='r')
+    ax.hlines(const.tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
     if plot_hoehe == 1:
         ax2.plot(np.divide(xalt,1000),alt,lw=1)
     ax2.set_xlim([0,max(x)/1000])
@@ -703,9 +694,9 @@ if plot_zeit == 1:
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-    ax.set_ylim([0,max_hf])
+    ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
-    ax.hlines(zonen,[0],[totalzeit],lw=1)
+    ax.hlines(const.zonen,[0],[totalzeit],lw=1)
     #ax.vlines(np.divide(pos,3600),[0],[200],lw=2,color='y')
     #pos = (totalzeit))
     #for i in range(1,len(Runden)+1):
@@ -754,9 +745,9 @@ if plot_pause == 1:
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
     ax.set_title("%s on %s" % (sport,startzeit.strftime("%A, %b. %d, %Y")))
-    ax.set_ylim([0,max_hf])
+    ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
-    ax.hlines(zonen,[t[0]/3600],[t[-1]/3600],lw=1)
+    ax.hlines(const.zonen,[t[0]/3600],[t[-1]/3600],lw=1)
     # ax.vlines(ereignis,[0],[200],lw=2,color='g')
     for i in range(0,len(Runden)):
         ax.vlines(Runden[i].s_pauslinie,[0],[200],lw=2,color='y')
@@ -796,7 +787,7 @@ if (CP == 1) and any(power > 0):
     Int   = [0]*int(max(power))
     Pint  = [0]*int(max(power))
     # Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
-    for i in range(lower_Plimit,len(Pint)):
+    for i in range(const.lower_Plimit,len(Pint)):
         Int[i] = i
         Pint[i] = len(power[power > i])
     # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
@@ -822,8 +813,8 @@ if (CP == 1) and any(power > 0):
     ax.grid(color='k', linestyle=':', linewidth=1)
     plt.xlabel('Intervall (min)')
     plt.ylabel('Leistung (W)')
-    # ax.plot(np.divide(Pint[lower_Plimit:-1],60),np.linspace((lower_Plimit + 1),len(Pint)-(lower_Plimit + 1),len(Pint)-(lower_Plimit + 1))+(lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
-    ax.plot(np.divide(Pint[lower_Plimit:-1],60),Int[lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
+    # ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),np.linspace((const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1))+(const.lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
+    ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),Int[const.lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
     ax.plot(np.divide(Pint2,60),Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
     ax.legend(loc='best')
 
@@ -881,7 +872,7 @@ print(">")
 ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
 for i in range(0,len(Runden)):
     ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
-ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
+ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(const.raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
 for i in range(0,len(Runden)):
     ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
