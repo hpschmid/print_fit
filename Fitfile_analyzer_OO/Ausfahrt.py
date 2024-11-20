@@ -37,6 +37,12 @@ class Ausfahrt:
         self.talt  = []
         self.T     = [] # Temperatur
         self.tT    = []
+        self.h     = 0
+        self.m     = 0
+        self.s     = 0
+        self.hp    = 0
+        self.mp    = 0
+        self.sp    = 0
 
     def get_filename(self,args):
         list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
@@ -310,6 +316,14 @@ class Ausfahrt:
                     print(" * %s: %s" % (record_data.name, record_data.value))
             print()
 
+    def rechne_gesamtzeit(self):
+        self.h = np.floor(self.session.zeit / 3600)
+        self.m = np.floor((self.session.zeit - self.h * 3600) / 60)
+        self.s = self.session.zeit - self.h * 3600 - self.m * 60
+        pausenzeit = self.session.totalzeit - self.session.zeit
+        self.hp = np.floor(pausenzeit/3600)
+        self.mp = np.floor((pausenzeit - self.hp*3600)/60)
+        self.sp = pausenzeit - self.hp*3600 - self.mp*60
 
 class Runde:
     def __init__(self):

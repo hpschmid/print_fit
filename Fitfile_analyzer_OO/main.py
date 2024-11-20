@@ -23,59 +23,53 @@ from Odometer import *
 const = Konstanten()
 args = Argumente()
 args.read_arguments(sys.argv)
-ausfahrt = Ausfahrt()
-fen1 = ausfahrt.get_filename(args)
-ausfahrt.read_all_records()
+fahrt = Ausfahrt()
+fen1 = fahrt.get_filename(args)
+fahrt.read_all_records()
 
 if args.debug_print == 1:
-    ausfahrt.debug_print()
+    fahrt.debug_print()
 
-ausfahrt.lese_runden()
-ausfahrt.finde_zwischen_runden(const.schwelle_zwischen)
-ausfahrt.lese_zusammenfassung()
+fahrt.lese_runden()
+fahrt.finde_zwischen_runden(const.schwelle_zwischen)
+fahrt.lese_zusammenfassung()
+fahrt.rechne_gesamtzeit()
+
 odo = Odometer()
-odo.lese_odometer(ausfahrt.fitfile)
-
-h = np.floor(ausfahrt.session.zeit/3600)
-m = np.floor((ausfahrt.session.zeit - h*3600)/60)
-s = ausfahrt.session.zeit - h*3600 - m*60
-pausenzeit = ausfahrt.session.totalzeit - ausfahrt.session.zeit
-hp = np.floor(pausenzeit/3600)
-mp = np.floor((pausenzeit - hp*3600)/60)
-sp = pausenzeit - hp*3600 - mp*60
+odo.lese_odometer(fahrt.fitfile)
 
 # Replace all 'None' by 0s and calc. mean excluding zeros:
-ausfahrt.hf    = np.array([e if e is not None else 0 for e in ausfahrt.hf])
-af    = np.mean(ausfahrt.hf[ausfahrt.hf > 0])
+fahrt.hf    = np.array([e if e is not None else 0 for e in fahrt.hf])
+af    = np.mean(fahrt.hf[fahrt.hf > 0])
 if np.isnan(af):
     af = 0
-ausfahrt.cad   = np.array([e if e is not None else 0 for e in ausfahrt.cad])
-ac    = np.mean(ausfahrt.cad[ausfahrt.cad > 0])
+fahrt.cad   = np.array([e if e is not None else 0 for e in fahrt.cad])
+ac    = np.mean(fahrt.cad[fahrt.cad > 0])
 if np.isnan(ac):
     ac = 0
 
-ausfahrt.power = np.array([e if e is not None else 0 for e in ausfahrt.power])
-ausfahrt.powt   = [e if e is not None else 0 for e in ausfahrt.powt]
-ausfahrt.powt   = smooth(ausfahrt.powt, const.smooth_Pprint)
-Pprint = smooth(ausfahrt.power, const.smooth_Pprint)
-P30    = smooth(ausfahrt.power, const.smooth_P30)
+fahrt.power = np.array([e if e is not None else 0 for e in fahrt.power])
+fahrt.powt   = [e if e is not None else 0 for e in fahrt.powt]
+fahrt.powt   = smooth(fahrt.powt, const.smooth_Pprint)
+Pprint = smooth(fahrt.power, const.smooth_Pprint)
+P30    = smooth(fahrt.power, const.smooth_P30)
 if any(P30 > 0):
     NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
-    print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (ausfahrt.session.NP, NPcalc))
+    print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (fahrt.session.NP, NPcalc))
 
-if ausfahrt.session.NP == 0:
+if fahrt.session.NP == 0:
     if af == 0:
         print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 80% Intensitaet")
-        tss = int(ausfahrt.session.zeit/3600*80)
+        tss = int(fahrt.session.zeit / 3600 * 80)
     else:
-        tss = int(ausfahrt.session.zeit/3600*af/const.zonen[4]*100)
+        tss = int(fahrt.session.zeit / 3600 * af / const.zonen[4] * 100)
 else:
-    tss = (ausfahrt.session.NP / float(const.FTP) * ausfahrt.session.zeit / 3600 * 100)
+    tss = (fahrt.session.NP / float(const.FTP) * fahrt.session.zeit / 3600 * 100)
 print("TSS = %d" % tss)
 if not('kCal' in locals()):
     if af > 0:
         print("Kein KCal Wert vom Gerät, schätze kCal aus avHF und Zeit")
-        kCal = int(af*ausfahrt.session.zeit/3600*4.431)
+        kCal = int(af * fahrt.session.zeit / 3600 * 4.431)
     else:
         print("Kein KCal und keine HF verfügbar Wert vom Gerät, schätze kCal aus tss")
         kCal = tss*7.623
@@ -89,24 +83,24 @@ if max(Pprint) > 0:
     print ("stretch_power: " + str(stretch_power))
 
 stretch_T = 10
-while max(ausfahrt.T)*stretch_T < (const.max_hf / 2 * 1.1):
+while max(fahrt.T)*stretch_T < (const.max_hf / 2 * 1.1):
     stretch_T = stretch_T*2
-while max(ausfahrt.T)*stretch_T > (const.max_hf * 1.1):
+while max(fahrt.T)*stretch_T > (const.max_hf * 1.1):
     stretch_T = stretch_T/2
 print ("stretch_temperature: " + str(stretch_T))
 
 ############## Plots:
 try:
-    ausfahrt.cad = np.array(ausfahrt.cad)
-    ausfahrt.cad[ausfahrt.cad > 130] = None
-    ausfahrt.cad[ausfahrt.cad < 30] = None
-    gnd = min(ausfahrt.alt) - min(ausfahrt.alt) % 50
+    fahrt.cad = np.array(fahrt.cad)
+    fahrt.cad[fahrt.cad > 130] = None
+    fahrt.cad[fahrt.cad < 30] = None
+    gnd = min(fahrt.alt) - min(fahrt.alt) % 50
 except:
     print("Keine Kadenz verfuegbar")
 
 stretch_speed = 1
-if max(ausfahrt.speed) > 0:
-    while max(ausfahrt.speed)*stretch_speed < const.max_hf/2*1.1:
+if max(fahrt.speed) > 0:
+    while max(fahrt.speed)*stretch_speed < const.max_hf/2*1.1:
         stretch_speed = stretch_speed*2
 
 print("stretch_speed: " + str(stretch_speed))
@@ -116,15 +110,15 @@ strZonen  = " "
 #print(range(0,len(const.zonen)))
 for i in range(0,(len(const.zonen))):
   if i == (len(const.zonen)-1):
-    if ausfahrt.session.NP == 0:
-      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None, ausfahrt.hf)))
+    if fahrt.session.NP == 0:
+      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None, fahrt.hf)))
       messageZ = ("(HF >%2d Schläge) " % (const.zonen[i]))
     else:
       TB[i] = sum(j > const.tbPow[i]  for j in list(filter(None,P30)))
       messageZ = ("(>%2d W) " % (const.tbPow[i]))
   else:
-    if ausfahrt.session.NP == 0:
-      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, ausfahrt.hf)))
+    if fahrt.session.NP == 0:
+      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, fahrt.hf)))
       messageZ = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
     else:
       TB[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,P30)))
@@ -148,7 +142,7 @@ if args.plot_weg == 1:
     # mng.resize(*mng.window.maximize()) # maximizes over all screens
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
-    ax.set_title("%s on %s" % (ausfahrt.session.sport, ausfahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
+    ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
     ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
     plt.xlabel('Distance (km)')
@@ -159,33 +153,33 @@ if args.plot_weg == 1:
 
     plt.rc('lines', linewidth=2)
 
-    for i in range(0,len(ausfahrt.Runden)):
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 170, ("Runde %d" % (i + 1)), color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 161, ("%d km" % (ausfahrt.Runden[i].x / 1000)), color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 152, ("%d km/h" % (round(ausfahrt.Runden[i].speed))), color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 143, ("%d HS" % ausfahrt.Runden[i].HF), color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 134, ("%d W" % ausfahrt.Runden[i].power), color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_linie, ausfahrt.Runden[i].e_linie]), 125, ("%02d:%02d:%02d" % (ausfahrt.Runden[i].h, ausfahrt.Runden[i].m, ausfahrt.Runden[i].s)), color='y')
-        ax.vlines(ausfahrt.Runden[i].s_linie, [0], [200], lw=2, color='y')
-        ax.vlines(ausfahrt.Runden[i].e_linie, [0], [200], lw=2, color='y')
-    for i in range(0, len(ausfahrt.Zwischen)):
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 170, ("Zwischen %d" % (i + 1)), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 161, ("%d km" % (ausfahrt.Zwischen[i].x / 1000)), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 152, ("%d km/h" % (round(ausfahrt.Zwischen[i].speed))), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 143, ("%d HS" % ausfahrt.Zwischen[i].HF), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 134, ("%d W" % ausfahrt.Zwischen[i].power), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].x_start, ausfahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (ausfahrt.Zwischen[i].h, ausfahrt.Zwischen[i].m, ausfahrt.Zwischen[i].s)), color='y')
+    for i in range(0, len(fahrt.Runden)):
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 170, ("Runde %d" % (i + 1)), color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 161, ("%d km" % (fahrt.Runden[i].x / 1000)), color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 152, ("%d km/h" % (round(fahrt.Runden[i].speed))), color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 143, ("%d HS" % fahrt.Runden[i].HF), color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 134, ("%d W" % fahrt.Runden[i].power), color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 125, ("%02d:%02d:%02d" % (fahrt.Runden[i].h, fahrt.Runden[i].m, fahrt.Runden[i].s)), color='y')
+        ax.vlines(fahrt.Runden[i].s_linie, [0], [200], lw=2, color='y')
+        ax.vlines(fahrt.Runden[i].e_linie, [0], [200], lw=2, color='y')
+    for i in range(0, len(fahrt.Zwischen)):
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 170, ("Zwischen %d" % (i + 1)), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 161, ("%d km" % (fahrt.Zwischen[i].x / 1000)), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 152, ("%d km/h" % (round(fahrt.Zwischen[i].speed))), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 143, ("%d HS" % fahrt.Zwischen[i].HF), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 134, ("%d W" % fahrt.Zwischen[i].power), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
 
-    ax.plot(np.divide(ausfahrt.xcad, 1000), ausfahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.divide(ausfahrt.xspeed, 1000), np.multiply(ausfahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
-    ax.plot(np.divide(ausfahrt.xhf, 1000), ausfahrt.hf, label="HF")
-    ax.plot(np.divide(ausfahrt.xpow, 1000), np.multiply(Pprint, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
+    ax.plot(np.divide(fahrt.xcad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
+    ax.plot(np.divide(fahrt.xspeed, 1000), np.multiply(fahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
+    ax.plot(np.divide(fahrt.xpow, 1000), np.multiply(Pprint, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    ax.hlines(const.zonen, [0], [max(ausfahrt.x) / 1000], lw=1, colors='r')
-    ax.hlines(const.tbPow * stretch_power, [0], [max(ausfahrt.x) / 1000], lw=1, colors='m')
+    ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
+    ax.hlines(const.tbPow * stretch_power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
     if args.plot_hoehe == 1:
-        ax2.plot(np.divide(ausfahrt.xalt, 1000), ausfahrt.alt, lw=1)
-    ax2.set_xlim([0, max(ausfahrt.x) / 1000])
+        ax2.plot(np.divide(fahrt.xalt, 1000), fahrt.alt, lw=1)
+    ax2.set_xlim([0, max(fahrt.x) / 1000])
 
     ax.legend(loc='best')
     #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
@@ -220,20 +214,20 @@ if args.plot_zeit == 1:
     fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
-    ax.set_title("%s on %s" % (ausfahrt.session.sport, ausfahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
+    ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
     ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
-    ax.hlines(const.zonen, [0], [ausfahrt.session.totalzeit], lw=1)
-    for i in range(0, len(ausfahrt.Runden)):
-      ax.text(np.mean([ausfahrt.Runden[i].s_zeitlinie, ausfahrt.Runden[i].e_zeitlinie]), 170, ("Runde %d" % (i + 1)), color='y')
-      ax.text(np.mean([ausfahrt.Runden[i].s_zeitlinie, ausfahrt.Runden[i].e_zeitlinie]), 161, ("%d km/h" % ausfahrt.Runden[i].speed), color='y')
-      ax.text(np.mean([ausfahrt.Runden[i].s_zeitlinie, ausfahrt.Runden[i].e_zeitlinie]), 152, ("%02d:%02d:%02d" % (ausfahrt.Runden[i].h, ausfahrt.Runden[i].m, ausfahrt.Runden[i].s)), color='y')
-      ax.vlines(ausfahrt.Runden[i].s_zeitlinie, [0], [200], lw=2, color='y')
-      ax.vlines(ausfahrt.Runden[i].e_zeitlinie, [0], [200], lw=2, color='y')
-    for i in range(0, len(ausfahrt.Zwischen)):
-        ax.text(np.mean([ausfahrt.Zwischen[i].z_start, ausfahrt.Zwischen[i].z_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].z_start, ausfahrt.Zwischen[i].z_end]) / 3600, 161, ("%d km/h" % ausfahrt.Zwischen[i].speed), color='y')
-        ax.text(np.mean([ausfahrt.Zwischen[i].z_start, ausfahrt.Zwischen[i].z_end]) / 3600, 152, ("%02d:%02d:%02d" % (ausfahrt.Zwischen[i].h, ausfahrt.Zwischen[i].m, ausfahrt.Zwischen[i].s)), color='y')
+    ax.hlines(const.zonen, [0], [fahrt.session.totalzeit], lw=1)
+    for i in range(0, len(fahrt.Runden)):
+      ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 170, ("Runde %d" % (i + 1)), color='y')
+      ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 161, ("%d km/h" % fahrt.Runden[i].speed), color='y')
+      ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 152, ("%02d:%02d:%02d" % (fahrt.Runden[i].h, fahrt.Runden[i].m, fahrt.Runden[i].s)), color='y')
+      ax.vlines(fahrt.Runden[i].s_zeitlinie, [0], [200], lw=2, color='y')
+      ax.vlines(fahrt.Runden[i].e_zeitlinie, [0], [200], lw=2, color='y')
+    for i in range(0, len(fahrt.Zwischen)):
+        ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 161, ("%d km/h" % fahrt.Zwischen[i].speed), color='y')
+        ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 152, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
 
     plt.xlabel('Time (h)')
     plt.ylabel('Cadence, Speed, HF')
@@ -243,15 +237,15 @@ if args.plot_zeit == 1:
 
     plt.rc('lines', linewidth=2)
 
-    ax.plot(np.linspace(0, len(ausfahrt.T) / 3600, len(ausfahrt.T)), np.multiply(ausfahrt.T, stretch_T), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(stretch_T))
-    ax.plot(np.linspace(0, len(ausfahrt.cad) / 3600, len(ausfahrt.cad)), ausfahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.linspace(0, len(ausfahrt.speed) / 3600, len(ausfahrt.speed)), np.multiply(ausfahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
-    ax.plot(np.linspace(0, len(ausfahrt.hf) / 3600, len(ausfahrt.hf)), ausfahrt.hf, label="HF")
+    ax.plot(np.linspace(0, len(fahrt.T) / 3600, len(fahrt.T)), np.multiply(fahrt.T, stretch_T), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(stretch_T))
+    ax.plot(np.linspace(0, len(fahrt.cad) / 3600, len(fahrt.cad)), fahrt.cad, lw=0.5, label ="Cadence")
+    ax.plot(np.linspace(0, len(fahrt.speed) / 3600, len(fahrt.speed)), np.multiply(fahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.linspace(0, len(fahrt.hf) / 3600, len(fahrt.hf)), fahrt.hf, label="HF")
     ax.plot(np.linspace(0,len(Pprint)/3600,len(Pprint)),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     if args.plot_hoehe == 1:
-        ax2.plot(np.linspace(0, len(ausfahrt.alt) / 3600, len(ausfahrt.alt)), ausfahrt.alt, lw=1)
-    ax.set_xlim([0, len(ausfahrt.speed) / 3600])
+        ax2.plot(np.linspace(0, len(fahrt.alt) / 3600, len(fahrt.alt)), fahrt.alt, lw=1)
+    ax.set_xlim([0, len(fahrt.speed) / 3600])
 
     ax.legend(loc='best')
     #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
@@ -265,17 +259,17 @@ if args.plot_pause == 1:
     fig = plt.figure(figsize=fenster)
     ax = fig.add_subplot(1, 1, 1)
     ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
-    ax.set_title("%s on %s" % (ausfahrt.session.sport, ausfahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
+    ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
     ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
-    ax.hlines(const.zonen, [ausfahrt.t[0] / 3600], [ausfahrt.t[-1] / 3600], lw=1)
+    ax.hlines(const.zonen, [fahrt.t[0] / 3600], [fahrt.t[-1] / 3600], lw=1)
     # ax.vlines(ereignis,[0],[200],lw=2,color='g')
-    for i in range(0, len(ausfahrt.Runden)):
-        ax.vlines(ausfahrt.Runden[i].s_pauslinie, [0], [200], lw=2, color='y')
-        ax.vlines(ausfahrt.Runden[i].e_pauslinie, [0], [200], lw=2, color='y')
-        ax.text(np.mean([ausfahrt.Runden[i].s_pauslinie, ausfahrt.Runden[i].e_pauslinie]), 170, ("Runde %d" % (i + 1)), color='y')
-    for i in range(0, len(ausfahrt.Zwischen)):
-        ax.text(np.mean([ausfahrt.Zwischen[i].t_start, ausfahrt.Zwischen[i].t_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
+    for i in range(0, len(fahrt.Runden)):
+        ax.vlines(fahrt.Runden[i].s_pauslinie, [0], [200], lw=2, color='y')
+        ax.vlines(fahrt.Runden[i].e_pauslinie, [0], [200], lw=2, color='y')
+        ax.text(np.mean([fahrt.Runden[i].s_pauslinie, fahrt.Runden[i].e_pauslinie]), 170, ("Runde %d" % (i + 1)), color='y')
+    for i in range(0, len(fahrt.Zwischen)):
+        ax.text(np.mean([fahrt.Zwischen[i].t_start, fahrt.Zwischen[i].t_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
     plt.xlabel('Time (h)')
     plt.ylabel('Cadence, Speed, HF')
     ax2 = ax.twinx()
@@ -285,16 +279,16 @@ if args.plot_pause == 1:
     plt.rc('lines', linewidth=2)
 
     #ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
-    ax.plot(ausfahrt.tcad, ausfahrt.cadt, lw=0.5, label ="Cadence")
-    ax.plot(ausfahrt.tspeed, np.multiply(ausfahrt.speedt, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(fahrt.tcad, fahrt.cadt, lw=0.5, label ="Cadence")
+    ax.plot(fahrt.tspeed, np.multiply(fahrt.speedt, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
     #ax.plot(np.linspace(0,len(thf)/3600,len(hft)),hft, label="HF")
-    ax.plot(ausfahrt.thf, ausfahrt.hft, label="HF")
-    ax.plot(ausfahrt.tpow, np.multiply(ausfahrt.powt, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
+    ax.plot(fahrt.thf, fahrt.hft, label="HF")
+    ax.plot(fahrt.tpow, np.multiply(fahrt.powt, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     if args.plot_hoehe == 1:
-        ax2.plot(ausfahrt.talt, ausfahrt.altt, lw=1)
-    ax.set_xlim([ausfahrt.t[0] / 3600, ausfahrt.t[-1] / 3600])
+        ax2.plot(fahrt.talt, fahrt.altt, lw=1)
+    ax.set_xlim([fahrt.t[0] / 3600, fahrt.t[-1] / 3600])
 
     ax.legend(loc='best')
     #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
@@ -303,14 +297,14 @@ if args.plot_pause == 1:
 
 ############### Critical Power:  ######################################################
 args.CP30 = 0
-if (args.CP == 1) and any(ausfahrt.power > 0):
+if (args.CP == 1) and any(fahrt.power > 0):
     steps = 30
-    Int   = [0]*int(max(ausfahrt.power))
-    Pint  = [0]*int(max(ausfahrt.power))
+    Int   = [0]*int(max(fahrt.power))
+    Pint  = [0]*int(max(fahrt.power))
     # Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
     for i in range(const.lower_Plimit,len(Pint)):
         Int[i] = i
-        Pint[i] = len(ausfahrt.power[ausfahrt.power > i])
+        Pint[i] = len(fahrt.power[fahrt.power > i])
     # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
     steps = 15
     max_interval = 150*60
@@ -321,7 +315,7 @@ if (args.CP == 1) and any(ausfahrt.power > 0):
     Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     for i in range(1,steps):
         print('Berechne max. Leistung für %d min (bis %d)...' % (i*step_size/60, max_interval/60), end='\r')
-        Psmooth = smooth(ausfahrt.power, i * step_size)
+        Psmooth = smooth(fahrt.power, i * step_size)
         Int2[i] = max(Psmooth)
         Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     print('\nFertig!\n')
@@ -342,18 +336,18 @@ if (args.CP == 1) and any(ausfahrt.power > 0):
     plt.show()
 
 ############### Barplot:            ######################################################
-if (len(ausfahrt.Runden) > 0) & (args.plot_bar == 1):
-    bar_r = np.zeros(len(ausfahrt.Alle))
-    bar_x = np.zeros(len(ausfahrt.Alle))
-    bar_v = np.zeros(len(ausfahrt.Alle))
-    bar_p = np.zeros(len(ausfahrt.Alle))
-    bar_h = np.zeros(len(ausfahrt.Alle))
-    for i in range(0, len(ausfahrt.Alle)):
+if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
+    bar_r = np.zeros(len(fahrt.Alle))
+    bar_x = np.zeros(len(fahrt.Alle))
+    bar_v = np.zeros(len(fahrt.Alle))
+    bar_p = np.zeros(len(fahrt.Alle))
+    bar_h = np.zeros(len(fahrt.Alle))
+    for i in range(0, len(fahrt.Alle)):
         bar_r[i] = i+1
-        bar_x[i] = ausfahrt.Alle[i].x / 1000
-        bar_v[i] = ausfahrt.Alle[i].speed
-        bar_p[i] = ausfahrt.Alle[i].power
-        bar_h[i] = ausfahrt.Alle[i].anstieg
+        bar_x[i] = fahrt.Alle[i].x / 1000
+        bar_v[i] = fahrt.Alle[i].speed
+        bar_p[i] = fahrt.Alle[i].power
+        bar_h[i] = fahrt.Alle[i].anstieg
 
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
@@ -363,8 +357,8 @@ if (len(ausfahrt.Runden) > 0) & (args.plot_bar == 1):
     plt.ylabel('km, km/h')
     ax.bar(bar_r-0.3,bar_x,0.2,lw=2, color="orange", label = "km")
     ax.bar(bar_r-0.1,bar_v,0.2,lw=2, color="blue", label = "km/h")
-    ax.bar(bar_r + 0.1, np.zeros(len(ausfahrt.Alle)), 0.2, lw=2, color="m", label ="Leistung")
-    ax.bar(bar_r + 0.3, np.zeros(len(ausfahrt.Alle)), 0.2, lw=2, color="grey", label ="Anstieg")
+    ax.bar(bar_r + 0.1, np.zeros(len(fahrt.Alle)), 0.2, lw=2, color="m", label ="Leistung")
+    ax.bar(bar_r + 0.3, np.zeros(len(fahrt.Alle)), 0.2, lw=2, color="grey", label ="Anstieg")
     plt.xticks(bar_r)
     ax.legend(loc='best')
 
@@ -379,26 +373,26 @@ if (len(ausfahrt.Runden) > 0) & (args.plot_bar == 1):
 
 ############### Print für Tabelle:  ######################################################
 
-rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (ausfahrt.session.strecke / 1000, ausfahrt.session.avspeed, h, m, s, ausfahrt.session.v_max, kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, af, ausfahrt.session.NP, args.CP30, ac, ausfahrt.session.anstieg, tss, odo.kmstr, hp, mp, sp, strZonen))
-for i in range(0, len(ausfahrt.Alle)):
-    rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (ausfahrt.Alle[i].x / 1000, ausfahrt.Alle[i].speed, ausfahrt.Alle[i].h, ausfahrt.Alle[i].m, ausfahrt.Alle[i].s, ausfahrt.Alle[i].HF, ausfahrt.Alle[i].power, ausfahrt.Alle[i].anstieg, ausfahrt.Alle[i].v_max))
+rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (fahrt.session.strecke / 1000, fahrt.session.avspeed, fahrt.h, fahrt.m, fahrt.s, fahrt.session.v_max, kCal))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, af, fahrt.session.NP, args.CP30, ac, fahrt.session.anstieg, tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
+for i in range(0, len(fahrt.Alle)):
+    rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (fahrt.Alle[i].x / 1000, fahrt.Alle[i].speed, fahrt.Alle[i].h, fahrt.Alle[i].m, fahrt.Alle[i].s, fahrt.Alle[i].HF, fahrt.Alle[i].power, fahrt.Alle[i].anstieg, fahrt.Alle[i].v_max))
 rstr = rstr.replace('.',',')
-rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (ausfahrt.session.startzeit.day, ausfahrt.session.startzeit.month, odo.bike_id, ausfahrt.session.startzeit.hour, ausfahrt.session.startzeit.minute, ausfahrt.session.startzeit.second, rstr))
+rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (fahrt.session.startzeit.day, fahrt.session.startzeit.month, odo.bike_id, fahrt.session.startzeit.hour, fahrt.session.startzeit.minute, fahrt.session.startzeit.second, rstr))
 
 print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
 print(rstr)
 print(">")
 
 ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
-for i in range(0, len(ausfahrt.Runden)):
+for i in range(0, len(fahrt.Runden)):
     ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
 ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(odo.raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
-for i in range(0, len(ausfahrt.Runden)):
+for i in range(0, len(fahrt.Runden)):
     ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
 if args.print_csv == 1:
-    file = open(ausfahrt.csvdatei,"w")
+    file = open(fahrt.csvdatei, "w")
     file.write(ueberschrift1 + "\r\n")
     file.write(ueberschrift2 + "\r\n")
     file.write(rstr)
