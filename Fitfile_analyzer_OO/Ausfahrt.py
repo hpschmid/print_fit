@@ -3,6 +3,7 @@ from tkinter import filedialog
 from fitparse import FitFile
 import glob
 import os
+
 from Math import *
 
 class Ausfahrt:
@@ -43,6 +44,8 @@ class Ausfahrt:
         self.hp    = 0
         self.mp    = 0
         self.sp    = 0
+        self.Pprint = 0
+        self.P30   = 0
 
     def get_filename(self,args):
         list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
@@ -316,6 +319,43 @@ class Ausfahrt:
                     print(" * %s: %s" % (record_data.name, record_data.value))
             print()
 
+    def prepare_values(self, const):
+        # Replace all 'None' by 0s and calc. mean excluding zeros:
+        self.hf    = np.array([e if e is not None else 0 for e in self.hf])
+        self.session.av_hf    = np.mean(self.hf[self.hf > 0])
+        if np.isnan(self.session.av_hf):
+            self.session.av_hf = 0
+        self.cad = np.array([e if e is not None else 0 for e in self.cad])
+        self.session.av_cad    = np.mean(self.cad[self.cad > 0])
+        if np.isnan(self.session.av_cad):
+            self.session.av_cad = 0
+
+        self.power = np.array([e if e is not None else 0 for e in self.power])
+        self.powt   = [e if e is not None else 0 for e in self.powt]
+        self.powt   = smooth(self.powt, const.smooth_Pprint)
+        self.Pprint = smooth(self.power, const.smooth_Pprint)
+        self.P30    = smooth(self.power, const.smooth_P30)
+        if any(self.P30 > 0):
+            np_calc = int(np.sqrt(np.sqrt(np.mean(np.power(self.P30[self.P30 > 0],4)))))
+            print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (self.session.NP, np_calc))
+
+        if self.session.NP == 0:
+            if self.session.av_hf == 0:
+                print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 80% Intensitaet")
+                self.session.tss = int(self.session.zeit / 3600 * 80)
+            else:
+                self.session.tss = int(self.session.zeit / 3600 * self.session.av_hf / const.zonen[4] * 100)
+        else:
+            self.session.tss = (self.session.NP / float(const.FTP) * self.session.zeit / 3600 * 100)
+        print("TSS = %d" % self.session.tss)
+        if not('kCal' in locals()):
+            if self.session.av_hf > 0:
+                print("Kein KCal Wert vom Gerät, schätze kCal aus avHF und Zeit")
+                self.session.kCal = int(self.session.av_hf * self.session.zeit / 3600 * 4.431)
+            else:
+                print("Kein KCal und keine HF verfügbar Wert vom Gerät, schätze kCal aus tss")
+                self.session.kCal = self.session.tss*7.623
+
     def rechne_gesamtzeit(self):
         self.h = np.floor(self.session.zeit / 3600)
         self.m = np.floor((self.session.zeit - self.h * 3600) / 60)
@@ -367,3 +407,5 @@ class Zusammenfassung:
         self.kadenz = 0
         self.startzeit = 0
         self.sport = 0
+        self.av_cad = 0
+        self.av_hf = 0

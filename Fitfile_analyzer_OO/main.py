@@ -34,104 +34,27 @@ fahrt.lese_runden()
 fahrt.finde_zwischen_runden(const.schwelle_zwischen)
 fahrt.lese_zusammenfassung()
 fahrt.rechne_gesamtzeit()
+fahrt.prepare_values(const)
 
 odo = Odometer()
 odo.lese_odometer(fahrt.fitfile)
-
-# Replace all 'None' by 0s and calc. mean excluding zeros:
-fahrt.hf    = np.array([e if e is not None else 0 for e in fahrt.hf])
-af    = np.mean(fahrt.hf[fahrt.hf > 0])
-if np.isnan(af):
-    af = 0
-fahrt.cad   = np.array([e if e is not None else 0 for e in fahrt.cad])
-ac    = np.mean(fahrt.cad[fahrt.cad > 0])
-if np.isnan(ac):
-    ac = 0
-
-fahrt.power = np.array([e if e is not None else 0 for e in fahrt.power])
-fahrt.powt   = [e if e is not None else 0 for e in fahrt.powt]
-fahrt.powt   = smooth(fahrt.powt, const.smooth_Pprint)
-Pprint = smooth(fahrt.power, const.smooth_Pprint)
-P30    = smooth(fahrt.power, const.smooth_P30)
-if any(P30 > 0):
-    NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
-    print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (fahrt.session.NP, NPcalc))
-
-if fahrt.session.NP == 0:
-    if af == 0:
-        print("Keine Leistung und keine HF verfuegbar, schaetze TSS mit 80% Intensitaet")
-        tss = int(fahrt.session.zeit / 3600 * 80)
-    else:
-        tss = int(fahrt.session.zeit / 3600 * af / const.zonen[4] * 100)
-else:
-    tss = (fahrt.session.NP / float(const.FTP) * fahrt.session.zeit / 3600 * 100)
-print("TSS = %d" % tss)
-if not('kCal' in locals()):
-    if af > 0:
-        print("Kein KCal Wert vom Gerät, schätze kCal aus avHF und Zeit")
-        kCal = int(af * fahrt.session.zeit / 3600 * 4.431)
-    else:
-        print("Kein KCal und keine HF verfügbar Wert vom Gerät, schätze kCal aus tss")
-        kCal = tss*7.623
-
-stretch_power = 1
-if max(Pprint) > 0:
-    while max(Pprint)*stretch_power < (const.max_hf/2*1.1):
-        stretch_power = stretch_power*2
-    while max(Pprint)*stretch_power > (const.max_hf*1.1):
-        stretch_power = stretch_power/2
-    print ("stretch_power: " + str(stretch_power))
-
-stretch_T = 10
-while max(fahrt.T)*stretch_T < (const.max_hf / 2 * 1.1):
-    stretch_T = stretch_T*2
-while max(fahrt.T)*stretch_T > (const.max_hf * 1.1):
-    stretch_T = stretch_T/2
-print ("stretch_temperature: " + str(stretch_T))
 
 ############## Plots:
 try:
     fahrt.cad = np.array(fahrt.cad)
     fahrt.cad[fahrt.cad > 130] = None
     fahrt.cad[fahrt.cad < 30] = None
-    gnd = min(fahrt.alt) - min(fahrt.alt) % 50
 except:
     print("Keine Kadenz verfuegbar")
 
-stretch_speed = 1
-if max(fahrt.speed) > 0:
-    while max(fahrt.speed)*stretch_speed < const.max_hf/2*1.1:
-        stretch_speed = stretch_speed*2
-
-print("stretch_speed: " + str(stretch_speed))
-
-TB = np.zeros(len(const.zonen)+1)
-strZonen  = " "
-#print(range(0,len(const.zonen)))
-for i in range(0,(len(const.zonen))):
-  if i == (len(const.zonen)-1):
-    if fahrt.session.NP == 0:
-      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None, fahrt.hf)))
-      messageZ = ("(HF >%2d Schläge) " % (const.zonen[i]))
-    else:
-      TB[i] = sum(j > const.tbPow[i]  for j in list(filter(None,P30)))
-      messageZ = ("(>%2d W) " % (const.tbPow[i]))
-  else:
-    if fahrt.session.NP == 0:
-      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, fahrt.hf)))
-      messageZ = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
-    else:
-      TB[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,P30)))
-      messageZ = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
-
-  hz = np.floor(TB[i]/3600)
-  mz = np.floor((TB[i] - hz*3600)/60)
-  sz = TB[i] - hz*3600 - mz*60
-  print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + messageZ)
-  strZonen = ("%s %2d:%2d:%2d;" % (strZonen,hz,mz,sz))
+TB, strZonen = berechne_trainingsbereiche(const, fahrt)
+skala = Skalen()
+skala.finde_skalierung(fahrt, const, fahrt.Pprint)
 
 fen1.destroy()
+
 ################# Nach Weg: ###########################################################################
+
 fenster = [19.5, 10]
 if args.plot_weg == 1:
     plt.xkcd()
@@ -171,18 +94,18 @@ if args.plot_weg == 1:
         ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
 
     ax.plot(np.divide(fahrt.xcad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.divide(fahrt.xspeed, 1000), np.multiply(fahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.divide(fahrt.xspeed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
     ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
-    ax.plot(np.divide(fahrt.xpow, 1000), np.multiply(Pprint, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
+    ax.plot(np.divide(fahrt.xpow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
-    ax.hlines(const.tbPow * stretch_power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
+    ax.hlines(const.tbPow * skala.power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
     if args.plot_hoehe == 1:
         ax2.plot(np.divide(fahrt.xalt, 1000), fahrt.alt, lw=1)
     ax2.set_xlim([0, max(fahrt.x) / 1000])
 
     ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
+    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
     labels = 'TB0','TB1','TB2','TB3','TB4'
     TB = TB[0:5]
@@ -237,18 +160,18 @@ if args.plot_zeit == 1:
 
     plt.rc('lines', linewidth=2)
 
-    ax.plot(np.linspace(0, len(fahrt.T) / 3600, len(fahrt.T)), np.multiply(fahrt.T, stretch_T), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(stretch_T))
+    ax.plot(np.linspace(0, len(fahrt.T) / 3600, len(fahrt.T)), np.multiply(fahrt.T, skala.temp), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(skala.temp))
     ax.plot(np.linspace(0, len(fahrt.cad) / 3600, len(fahrt.cad)), fahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.linspace(0, len(fahrt.speed) / 3600, len(fahrt.speed)), np.multiply(fahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.linspace(0, len(fahrt.speed) / 3600, len(fahrt.speed)), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
     ax.plot(np.linspace(0, len(fahrt.hf) / 3600, len(fahrt.hf)), fahrt.hf, label="HF")
-    ax.plot(np.linspace(0,len(Pprint)/3600,len(Pprint)),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+    ax.plot(np.linspace(0,len(fahrt.Pprint)/3600,len(fahrt.Pprint)),np.multiply(fahrt.Pprint,skala.power), label='Power$\cdot$'+str(skala.power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     if args.plot_hoehe == 1:
         ax2.plot(np.linspace(0, len(fahrt.alt) / 3600, len(fahrt.alt)), fahrt.alt, lw=1)
     ax.set_xlim([0, len(fahrt.speed) / 3600])
 
     ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
+    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
     plt.show()
 
@@ -280,10 +203,10 @@ if args.plot_pause == 1:
 
     #ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
     ax.plot(fahrt.tcad, fahrt.cadt, lw=0.5, label ="Cadence")
-    ax.plot(fahrt.tspeed, np.multiply(fahrt.speedt, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(fahrt.tspeed, np.multiply(fahrt.speedt, skala.speed), label='Speed$\cdot$' + str(skala.speed))
     #ax.plot(np.linspace(0,len(thf)/3600,len(hft)),hft, label="HF")
     ax.plot(fahrt.thf, fahrt.hft, label="HF")
-    ax.plot(fahrt.tpow, np.multiply(fahrt.powt, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
+    ax.plot(fahrt.tpow, np.multiply(fahrt.powt, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     if args.plot_hoehe == 1:
@@ -291,7 +214,7 @@ if args.plot_pause == 1:
     ax.set_xlim([fahrt.t[0] / 3600, fahrt.t[-1] / 3600])
 
     ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
+    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
     plt.show()
 
@@ -311,7 +234,7 @@ if (args.CP == 1) and any(fahrt.power > 0):
     step_size = int(max_interval/steps)
     Int2  = [0]*len(range(1,steps+1))
     Pint2 = [0]*len(range(1,steps+1))
-    Int2[0] = max(P30)
+    Int2[0] = max(fahrt.P30)
     Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     for i in range(1,steps):
         print('Berechne max. Leistung für %d min (bis %d)...' % (i*step_size/60, max_interval/60), end='\r')
@@ -373,8 +296,8 @@ if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
 
 ############### Print für Tabelle:  ######################################################
 
-rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (fahrt.session.strecke / 1000, fahrt.session.avspeed, fahrt.h, fahrt.m, fahrt.s, fahrt.session.v_max, kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, af, fahrt.session.NP, args.CP30, ac, fahrt.session.anstieg, tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
+rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (fahrt.session.strecke / 1000, fahrt.session.avspeed, fahrt.h, fahrt.m, fahrt.s, fahrt.session.v_max, fahrt.session.kCal))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, fahrt.session.av_hf, fahrt.session.NP, args.CP30, fahrt.session.av_cad, fahrt.session.anstieg, fahrt.session.tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
 for i in range(0, len(fahrt.Alle)):
     rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (fahrt.Alle[i].x / 1000, fahrt.Alle[i].speed, fahrt.Alle[i].h, fahrt.Alle[i].m, fahrt.Alle[i].s, fahrt.Alle[i].HF, fahrt.Alle[i].power, fahrt.Alle[i].anstieg, fahrt.Alle[i].v_max))
 rstr = rstr.replace('.',',')
