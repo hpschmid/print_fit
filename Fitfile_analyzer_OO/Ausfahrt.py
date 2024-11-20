@@ -1,7 +1,38 @@
+from tkinter import *
+from tkinter import filedialog
+from fitparse import FitFile
+import glob
+import os
+
 class Ausfahrt:
     def __init__(self):
+        self.fitfile = None
+        self.csvdatei = None
         self.Runden = None
         self.age = None
+
+    def get_filename(self,args):
+        list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
+        latest_file = max(list_of_files, key=os.path.getctime)
+        print ("Neueste Ausfahrt: %s" % latest_file)
+
+        fen1 = Tk()                              # Create window
+        fen1.title("FitFileParser")
+        T = Text(fen1, height=5, width=40)
+        T.pack()
+        T.insert(END, "Asking for filename\n\n")
+        name = filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=latest_file)
+        self.fitfile = FitFile(name)
+        self.csvdatei = name.replace('fit','csv')
+        T.insert(END, "Parsing %s\n" % (os.path.basename(name)))
+        if args.print_csv == 1:
+            T.insert(END, "Will create %s\n" % (os.path.basename(self.csvdatei)))
+        else:
+            T.insert(END, "\n")
+        T.insert(END, "Wait a moment...\n")
+        fen1.update()
+
+        return fen1
 
 class Runde:
     def __init__(self):

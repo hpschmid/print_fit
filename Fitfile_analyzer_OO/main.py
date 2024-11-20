@@ -14,64 +14,20 @@ from fitparse   import FitFile
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes # , zoomed_inset_axes
 # from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-from datetime import timezone
 import numpy as np
 import sys
-import os
-from tkinter import *
-from tkinter import filedialog
 from cycler import cycler
-import glob
 from Konstanten import *
 from Ausfahrt import *
+from Math import *
 
 ###################################### Settings ####################################################
 const = Konstanten()
 args = Argumente()
+args.read_arguments(sys.argv)
+ausfahrt = Ausfahrt()
+fen1 = ausfahrt.get_filename(args)
 
-################ check arguments: #################################################################
-if len(sys.argv) > 1:
-    args.plot_weg    = int(sys.argv[1])
-    if len(sys.argv) > 2:
-        args.plot_zeit   = int(sys.argv[2])
-        if len(sys.argv) > 3:
-            args.plot_pause  = int(sys.argv[3])
-            if len(sys.argv) > 4:
-                args.CP  = int(sys.argv[4])
-                if len(sys.argv) > 5:
-                    args.plot_bar  = int(sys.argv[5])
-####################################################################################################
-
-def smooth(y, box_pts):
-    box = np.ones(box_pts)/box_pts
-    y_smooth = np.convolve(y, box, mode='same')
-    return y_smooth
-
-list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
-latest_file = max(list_of_files, key=os.path.getctime)
-print ("Neueste Ausfahrt: %s" % latest_file)
-
-fen1 = Tk()                              # Create window
-fen1.title("FitFileParser")
-T = Text(fen1, height=5, width=40)
-T.pack()
-T.insert(END, "Asking for filename\n\n")
-name = filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=latest_file)
-fitfile = FitFile(name)
-csvdatei = name.replace('fit','csv')
-T.insert(END, "Parsing %s\n" % (os.path.basename(name)))
-if args.print_csv == 1:
-    T.insert(END, "Will create %s\n" % (os.path.basename(csvdatei)))
-else:
-    T.insert(END, "\n")
-
-T.insert(END, "Wait a moment...\n")
-
-fen1.update()
-
-def datetime_to_local(utc_datetime):
-    offset = utc_datetime.replace(tzinfo=timezone.utc) - utc_datetime.astimezone(timezone.utc)
-    return utc_datetime + offset
 
 x     = []
 speed = [] # Geschwindigkeit vs. Fahrzeit
@@ -97,7 +53,7 @@ talt  = []
 T     = [] # Temperatur
 tT    = []
 # Get all data messages that are of type record
-for record in fitfile.get_messages('record'):
+for record in ausfahrt.fitfile.get_messages('record'):
     # Go through all the data entries in this record
     if record.get_value('distance') is not None:
         x.append(record.get_value('distance'))
@@ -168,7 +124,7 @@ for record in fitfile.get_messages('record'):
       pass
 
 if args.debug_print == 1:
-    for record in fitfile.get_messages('record'):
+    for record in ausfahrt.fitfile.get_messages('record'):
         for record_data in record:
             if record_data.units:
                 print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
@@ -177,7 +133,7 @@ if args.debug_print == 1:
                 print(" * %s: %s" % (record_data.name, record_data.value))
         print()
 
-    for record in fitfile.get_messages('event'):
+    for record in ausfahrt.fitfile.get_messages('event'):
         for record_data in record:
             if record_data.units:
                 print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
@@ -188,7 +144,7 @@ if args.debug_print == 1:
 
 Runden = []
 
-for Laps in fitfile.get_messages('lap'):
+for Laps in ausfahrt.fitfile.get_messages('lap'):
     Runden.append(Runde())
     print("Runde " + str(len(Runden)))
     for record_data in Laps:
@@ -311,7 +267,7 @@ for i in range(0,len(Zwischen)):
         print("Keine Leistung für Zwischenstrecke verfuegbar")
 
 
-for Summary in fitfile.get_messages('session'):
+for Summary in ausfahrt.fitfile.get_messages('session'):
     print("Zusammenfassung")
     print("===============")
     for record_data in Summary:
@@ -351,7 +307,7 @@ for Summary in fitfile.get_messages('session'):
             print(" * %s: %s" % (record_data.name, record_data.value))
     print()
 
-for file_id in fitfile.get_messages('file_id'):
+for file_id in ausfahrt.fitfile.get_messages('file_id'):
     for record_data in file_id:
         if record_data.name == "manufacturer":
             hersteller = record_data.value
@@ -362,7 +318,7 @@ bike = "Default"
 id_final = 1
 args.bike_id = 1
 if hersteller == "srm":
-    for bike_profile in fitfile.get_messages('bike_profile'):
+    for bike_profile in ausfahrt.fitfile.get_messages('bike_profile'):
         for record_data in bike_profile:
             if record_data.name == "name":
                 bike = record_data.value
@@ -402,7 +358,7 @@ elif hersteller == "igpsport":
                 km[args.bike_id] = record_data.value/1000
 
 elif hersteller == "bryton":
-    for bike_profile in fitfile.get_messages('unknown_68'):
+    for bike_profile in ausfahrt.fitfile.get_messages('unknown_68'):
         for record_data in bike_profile:
             if record_data.name == "unknown_7":
                 id_final = record_data.value
@@ -434,7 +390,7 @@ elif hersteller == "bryton":
                 trip2_str =('Trip2%d_km' % id_final)
                 km[args.bike_id] = system[trip2_str]
 elif hersteller == "garmin":
-    for Summary in fitfile.get_messages('session'):
+    for Summary in ausfahrt.fitfile.get_messages('session'):
         for record_data in Summary:
             if record_data.name == "unknown_110":
                 bike = record_data.value
