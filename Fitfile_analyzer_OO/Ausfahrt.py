@@ -9,7 +9,29 @@ class Ausfahrt:
         self.fitfile = None
         self.csvdatei = None
         self.Runden = None
-        self.age = None
+        self.x     = []
+        self.speed = [] # Geschwindigkeit vs. Fahrzeit
+        self.speedt= [] # Geschwindigkeit vs. Uhrzeit
+        self.xspeed= [] # Weg Achse für Geschwindigkeit
+        self.tspeed= [] # Uhrzeit Achse für Geschwindigkeit
+        self.hf    = [] # Herzfrequnez vs. Fahrzeit
+        self.hft   = [] # etc.
+        self.xhf   = []
+        self.thf   = []
+        self.power = []
+        self.powt  = []
+        self.xpow  = []
+        self.tpow  = []
+        self.cad   = []
+        self.cadt  = []
+        self.xcad  = []
+        self.tcad  = []
+        self.alt   = []
+        self.altt  = []
+        self.xalt  = []
+        self.talt  = []
+        self.T     = [] # Temperatur
+        self.tT    = []
 
     def get_filename(self,args):
         list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number

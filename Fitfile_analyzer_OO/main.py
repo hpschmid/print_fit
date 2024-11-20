@@ -28,38 +28,14 @@ args.read_arguments(sys.argv)
 ausfahrt = Ausfahrt()
 fen1 = ausfahrt.get_filename(args)
 
-
-x     = []
-speed = [] # Geschwindigkeit vs. Fahrzeit
-speedt= [] # Geschwindigkeit vs. Uhrzeit
-xspeed= [] # Weg Achse für Geschwindigkeit
-tspeed= [] # Uhrzeit Achse für Geschwindigkeit
-hf    = [] # Herzfrequnez vs. Fahrzeit
-hft   = [] # etc.
-xhf   = []
-thf   = []
-power = []
-powt  = []
-xpow  = []
-tpow  = []
-cad   = []
-cadt  = []
-xcad  = []
-tcad  = []
-alt   = []
-altt  = []
-xalt  = []
-talt  = []
-T     = [] # Temperatur
-tT    = []
 # Get all data messages that are of type record
 for record in ausfahrt.fitfile.get_messages('record'):
     # Go through all the data entries in this record
     if record.get_value('distance') is not None:
-        x.append(record.get_value('distance'))
+        ausfahrt.x.append(record.get_value('distance'))
     else:
-        x.append(x[-1])
-    T.append(record.get_value('temperature'))
+        ausfahrt.x.append(ausfahrt.x[-1])
+    ausfahrt.T.append(record.get_value('temperature'))
     #if type(record.get_value('timestamp')) == int:
     #	zs = datetime_to_local(datetime.fromtimestamp(record.get_value('timestamp')))
     #else:
@@ -73,53 +49,53 @@ for record in ausfahrt.fitfile.get_messages('record'):
         t = [temp]
     temp = record.get_value('enhanced_speed')
     if temp is not None:
-        speedt.append(temp*3.6)
-        tspeed.append((t[-1]/float(3600)))
-        speed.append(temp*3.6)
-        xspeed.append(x[-1])
-    hft.append(record.get_value('heart_rate'))
+        ausfahrt.speedt.append(temp * 3.6)
+        ausfahrt.tspeed.append((t[-1] / float(3600)))
+        ausfahrt.speed.append(temp * 3.6)
+        ausfahrt.xspeed.append(ausfahrt.x[-1])
+    ausfahrt.hft.append(record.get_value('heart_rate'))
     try:
-        thf.append(t[-1]/float(3600))
+        ausfahrt.thf.append(t[-1] / float(3600))
     except:
-        del hft[-1]
+        del ausfahrt.hft[-1]
     try:
-      if speedt[-1] != 0:
-        hf.append(hft[-1])
-        xhf.append((x[-1]))
+      if ausfahrt.speedt[-1] != 0:
+        ausfahrt.hf.append(ausfahrt.hft[-1])
+        ausfahrt.xhf.append((ausfahrt.x[-1]))
     except:
       pass
-    powt.append(record.get_value('power'))
+    ausfahrt.powt.append(record.get_value('power'))
     try:
-        tpow.append(t[-1]/float(3600))
+        ausfahrt.tpow.append(t[-1] / float(3600))
     except:
-        del powt[-1]
+        del ausfahrt.powt[-1]
     try:
-      if speedt[-1] != 0:
-        power.append(powt[-1])
-        xpow.append(x[-1])
+      if ausfahrt.speedt[-1] != 0:
+        ausfahrt.power.append(ausfahrt.powt[-1])
+        ausfahrt.xpow.append(ausfahrt.x[-1])
     except:
         pass
 
-    altt.append(record.get_value('enhanced_altitude'))
+    ausfahrt.altt.append(record.get_value('enhanced_altitude'))
     try:
-        talt.append(t[-1]/float(3600))
+        ausfahrt.talt.append(t[-1] / float(3600))
     except:
-        del altt[-1]
+        del ausfahrt.altt[-1]
     try:
-      if speedt[-1] != 0:
-        alt.append(altt[-1])
-        xalt.append(x[-1])
+      if ausfahrt.speedt[-1] != 0:
+        ausfahrt.alt.append(ausfahrt.altt[-1])
+        ausfahrt.xalt.append(ausfahrt.x[-1])
     except:
       pass
-    cadt.append(record.get_value('cadence'))
+    ausfahrt.cadt.append(record.get_value('cadence'))
     try:
-        tcad.append(t[-1]/float(3600))
+        ausfahrt.tcad.append(t[-1] / float(3600))
     except:
-        del cadt[-1]
+        del ausfahrt.cadt[-1]
     try:
-      if speedt[-1] != 0:
-        cad.append(cadt[-1])
-        xcad.append(x[-1])
+      if ausfahrt.speedt[-1] != 0:
+        ausfahrt.cad.append(ausfahrt.cadt[-1])
+        ausfahrt.xcad.append(ausfahrt.x[-1])
     except:
       pass
 
@@ -155,7 +131,7 @@ for Laps in ausfahrt.fitfile.get_messages('lap'):
             #Runden[-1].x_start = x[t.index(temp)]
             idx = (np.abs(np.asarray(t) - temp)).argmin()
             Runden[-1].z_start = idx
-            Runden[-1].x_start = x[idx]
+            Runden[-1].x_start = ausfahrt.x[idx]
         if record_data.name == "timestamp":
             zs   = datetime_to_local(record_data.value)
             temp = zs.second + zs.minute*60 + zs.hour*3600
@@ -163,7 +139,7 @@ for Laps in ausfahrt.fitfile.get_messages('lap'):
             idx = (np.abs(np.asarray(t) - temp)).argmin()
             Runden[-1].z_end = idx
             Runden[-1].zeit = Runden[-1].z_end - Runden[-1].z_start
-            Runden[-1].x_end = x[idx]
+            Runden[-1].x_end = ausfahrt.x[idx]
         if record_data.name == "total_distance":
             Runden[-1].x = record_data.value
         if record_data.name == "avg_speed":
@@ -197,7 +173,7 @@ for Laps in ausfahrt.fitfile.get_messages('lap'):
         Runden[-1].e_linie = Runden[-1].x_end/1000
         Runden[-1].e_zeitlinie = Runden[-1].z_end/3600
         Runden[-1].e_pauslinie = Runden[-1].t_end/3600
-        Runden[-1].pos = ( (np.abs(np.array(xspeed) - Runden[-1].e_linie*1000)).argmin() )
+        Runden[-1].pos = ((np.abs(np.array(ausfahrt.xspeed) - Runden[-1].e_linie * 1000)).argmin())
     print()
 
 # Check, ob zwischen den Runden > 5 km sind, dann mach eine zusätzliche Runde draus:
@@ -206,9 +182,9 @@ Alle     = Runden[:]
 i = 0
 a = 0
 if len(Runden) > 0:
-    if (Runden[0].x_start - x[0]) > const.schwelle_zwischen:
+    if (Runden[0].x_start - ausfahrt.x[0]) > const.schwelle_zwischen:
         Zwischen.append(Runde())
-        Zwischen[-1].x_start = x[0]
+        Zwischen[-1].x_start = ausfahrt.x[0]
         Zwischen[-1].x_end = Runden[0].x_start
         Zwischen[-1].z_start = 0
         Zwischen[-1].z_end = Runden[0].z_start
@@ -232,16 +208,16 @@ if len(Runden) > 0:
                 Zwischen[-1].x_end = Runden[i].x_start
                 Alle.insert(i + a,Zwischen[-1])
                 a = a + 1
-    if (x[-1] - Runden[-1].x_end) > const.schwelle_zwischen:
+    if (ausfahrt.x[-1] - Runden[-1].x_end) > const.schwelle_zwischen:
         Zwischen.append(Runde())
-        Zwischen[-1].x = x[-1] - Runden[-1].x_end
+        Zwischen[-1].x = ausfahrt.x[-1] - Runden[-1].x_end
         Zwischen[-1].z_start = Runden[-1].z_end
-        Zwischen[-1].z_end = len(tspeed) # =len(hf)???
+        Zwischen[-1].z_end = len(ausfahrt.tspeed) # =len(hf)???
         Zwischen[-1].t_start = Runden[-1].t_end
         Zwischen[-1].t_end = t[-1]
-        Zwischen[-1].zeit = len(tspeed) - Runden[-1].z_end
+        Zwischen[-1].zeit = len(ausfahrt.tspeed) - Runden[-1].z_end
         Zwischen[-1].x_start = Runden[-1].x_end
-        Zwischen[-1].x_end = x[-1]
+        Zwischen[-1].x_end = ausfahrt.x[-1]
         Alle.append(Zwischen[-1])
 
 for i in range(0,len(Zwischen)):
@@ -249,18 +225,18 @@ for i in range(0,len(Zwischen)):
     Zwischen[i].m = np.floor((Zwischen[i].zeit - Zwischen[i].h*3600)/60)
     Zwischen[i].s = Zwischen[i].zeit - Zwischen[i].h*3600 - Zwischen[i].m*60
     Zwischen[i].speed = Zwischen[i].x/Zwischen[i].zeit*3.6
-    Zwischen[i].v_max = max(speed[Zwischen[i].z_start:Zwischen[i].z_end])
-    auf = np.diff(alt[Zwischen[i].z_start:Zwischen[i].z_end])
+    Zwischen[i].v_max = max(ausfahrt.speed[Zwischen[i].z_start:Zwischen[i].z_end])
+    auf = np.diff(ausfahrt.alt[Zwischen[i].z_start:Zwischen[i].z_end])
     auf[auf < 0] = 0
     Zwischen[i].anstieg = sum(auf)
     try:
-        hfz = np.array(hf[Zwischen[i].z_start:Zwischen[i].z_end])
+        hfz = np.array(ausfahrt.hf[Zwischen[i].z_start:Zwischen[i].z_end])
         hfz = list(filter(None,hfz))
         Zwischen[i].HF = sum(hfz)/len(hfz)
     except:
         print("Keine HF für Zwischenstrecke verfuegbar")
     try:
-        pz = np.array(power[Zwischen[i].z_start:Zwischen[i].z_end])
+        pz = np.array(ausfahrt.power[Zwischen[i].z_start:Zwischen[i].z_end])
         pz = list(filter(None,pz))
         Zwischen[i].power = sum(pz)/len(pz)
     except:
@@ -421,20 +397,20 @@ sp = pausenzeit - hp*3600 - mp*60
 #hf = list(map(add, hf, [args.Fitness]*len(hf)))
 
 # Replace all 'None' by 0s and calc. mean excluding zeros:
-hf    = np.array([e if e is not None else 0 for e in hf])
-af    = np.mean(hf[hf > 0])
+ausfahrt.hf    = np.array([e if e is not None else 0 for e in ausfahrt.hf])
+af    = np.mean(ausfahrt.hf[ausfahrt.hf > 0])
 if np.isnan(af):
     af = 0
-cad   = np.array([e if e is not None else 0 for e in cad])
-ac    = np.mean(cad[cad > 0])
+ausfahrt.cad   = np.array([e if e is not None else 0 for e in ausfahrt.cad])
+ac    = np.mean(ausfahrt.cad[ausfahrt.cad > 0])
 if np.isnan(ac):
     ac = 0
 
-power = np.array([e if e is not None else 0 for e in power])
-powt   = [e if e is not None else 0 for e in powt]
-powt   = smooth(powt,const.smooth_Pprint)
-Pprint = smooth(power,const.smooth_Pprint)
-P30    = smooth(power,const.smooth_P30)
+ausfahrt.power = np.array([e if e is not None else 0 for e in ausfahrt.power])
+ausfahrt.powt   = [e if e is not None else 0 for e in ausfahrt.powt]
+ausfahrt.powt   = smooth(ausfahrt.powt, const.smooth_Pprint)
+Pprint = smooth(ausfahrt.power, const.smooth_Pprint)
+P30    = smooth(ausfahrt.power, const.smooth_P30)
 if any(P30 > 0):
     NPcalc = int(np.sqrt(np.sqrt(np.mean(np.power(P30[P30 > 0],4)))))
     print("Normierte Leistung Gerät/Berechnet:  %d/%d W" % (NP,NPcalc))
@@ -465,24 +441,24 @@ if max(Pprint) > 0:
     print ("stretch_power: " + str(stretch_power))
 
 stretch_T = 10
-while max(T)*stretch_T < (const.max_hf/2*1.1):
+while max(ausfahrt.T)*stretch_T < (const.max_hf / 2 * 1.1):
     stretch_T = stretch_T*2
-while max(T)*stretch_T > (const.max_hf*1.1):
+while max(ausfahrt.T)*stretch_T > (const.max_hf * 1.1):
     stretch_T = stretch_T/2
 print ("stretch_temperature: " + str(stretch_T))
 
 ############## Plots:
 try:
-    cad = np.array(cad)
-    cad[cad > 130] = None
-    cad[cad < 30] = None
-    gnd = min(alt) - min(alt)%50
+    ausfahrt.cad = np.array(ausfahrt.cad)
+    ausfahrt.cad[ausfahrt.cad > 130] = None
+    ausfahrt.cad[ausfahrt.cad < 30] = None
+    gnd = min(ausfahrt.alt) - min(ausfahrt.alt) % 50
 except:
     print("Keine Kadenz verfuegbar")
 
 stretch_speed = 1
-if max(speed) > 0:
-    while max(speed)*stretch_speed < const.max_hf/2*1.1:
+if max(ausfahrt.speed) > 0:
+    while max(ausfahrt.speed)*stretch_speed < const.max_hf/2*1.1:
         stretch_speed = stretch_speed*2
 
 print("stretch_speed: " + str(stretch_speed))
@@ -493,14 +469,14 @@ strZonen  = " "
 for i in range(0,(len(const.zonen))):
   if i == (len(const.zonen)-1):
     if NP == 0:
-      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None,hf)))
+      TB[i] = sum(j > const.zonen[i]  for j in list(filter(None, ausfahrt.hf)))
       messageZ = ("(HF >%2d Schläge) " % (const.zonen[i]))
     else:
       TB[i] = sum(j > const.tbPow[i]  for j in list(filter(None,P30)))
       messageZ = ("(>%2d W) " % (const.tbPow[i]))
   else:
     if NP == 0:
-      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None,hf)))
+      TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, ausfahrt.hf)))
       messageZ = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
     else:
       TB[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,P30)))
@@ -559,16 +535,16 @@ if args.plot_weg == 1:
         ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 134, ("%d W"%Zwischen[i].power),color='y')
         ax.text(np.mean([Zwischen[i].x_start,Zwischen[i].x_end])/1000, 125, ("%02d:%02d:%02d" % (Zwischen[i].h,Zwischen[i].m,Zwischen[i].s)),color='y')
 
-    ax.plot(np.divide(xcad,1000),cad,lw=0.5, label = "Cadence")
-    ax.plot(np.divide(xspeed,1000),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
-    ax.plot(np.divide(xhf,1000),hf, label="HF")
-    ax.plot(np.divide(xpow,1000),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+    ax.plot(np.divide(ausfahrt.xcad, 1000), ausfahrt.cad, lw=0.5, label ="Cadence")
+    ax.plot(np.divide(ausfahrt.xspeed, 1000), np.multiply(ausfahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.divide(ausfahrt.xhf, 1000), ausfahrt.hf, label="HF")
+    ax.plot(np.divide(ausfahrt.xpow, 1000), np.multiply(Pprint, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    ax.hlines(const.zonen,[0],[max(x)/1000],lw=1,colors='r')
-    ax.hlines(const.tbPow*stretch_power,[0],[max(x)/1000],lw=1,colors='m')
+    ax.hlines(const.zonen, [0], [max(ausfahrt.x) / 1000], lw=1, colors='r')
+    ax.hlines(const.tbPow * stretch_power, [0], [max(ausfahrt.x) / 1000], lw=1, colors='m')
     if args.plot_hoehe == 1:
-        ax2.plot(np.divide(xalt,1000),alt,lw=1)
-    ax2.set_xlim([0,max(x)/1000])
+        ax2.plot(np.divide(ausfahrt.xalt, 1000), ausfahrt.alt, lw=1)
+    ax2.set_xlim([0, max(ausfahrt.x) / 1000])
 
     ax.legend(loc='best')
     #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
@@ -632,15 +608,15 @@ if args.plot_zeit == 1:
 
     plt.rc('lines', linewidth=2)
 
-    ax.plot(np.linspace(0,len(T)/3600,len(T)),np.multiply(T,stretch_T),lw=0.2, color="orange", label = "Temperature$\cdot$"+str(stretch_T))
-    ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
-    ax.plot(np.linspace(0,len(speed)/3600,len(speed)),np.multiply(speed,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
-    ax.plot(np.linspace(0,len(hf)/3600,len(hf)),hf, label="HF")
+    ax.plot(np.linspace(0, len(ausfahrt.T) / 3600, len(ausfahrt.T)), np.multiply(ausfahrt.T, stretch_T), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(stretch_T))
+    ax.plot(np.linspace(0, len(ausfahrt.cad) / 3600, len(ausfahrt.cad)), ausfahrt.cad, lw=0.5, label ="Cadence")
+    ax.plot(np.linspace(0, len(ausfahrt.speed) / 3600, len(ausfahrt.speed)), np.multiply(ausfahrt.speed, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
+    ax.plot(np.linspace(0, len(ausfahrt.hf) / 3600, len(ausfahrt.hf)), ausfahrt.hf, label="HF")
     ax.plot(np.linspace(0,len(Pprint)/3600,len(Pprint)),np.multiply(Pprint,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     if args.plot_hoehe == 1:
-        ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
-    ax.set_xlim([0,len(speed)/3600])
+        ax2.plot(np.linspace(0, len(ausfahrt.alt) / 3600, len(ausfahrt.alt)), ausfahrt.alt, lw=1)
+    ax.set_xlim([0, len(ausfahrt.speed) / 3600])
 
     ax.legend(loc='best')
     #ax.legend(('Cadence','Speed$\cdot$'+str(stretch_speed),'HF','Altitude'),'best')
@@ -674,15 +650,15 @@ if args.plot_pause == 1:
     plt.rc('lines', linewidth=2)
 
     #ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
-    ax.plot(tcad,cadt,lw=0.5, label = "Cadence")
-    ax.plot(tspeed,np.multiply(speedt,stretch_speed), label='Speed$\cdot$'+str(stretch_speed))
+    ax.plot(ausfahrt.tcad, ausfahrt.cadt, lw=0.5, label ="Cadence")
+    ax.plot(ausfahrt.tspeed, np.multiply(ausfahrt.speedt, stretch_speed), label='Speed$\cdot$' + str(stretch_speed))
     #ax.plot(np.linspace(0,len(thf)/3600,len(hft)),hft, label="HF")
-    ax.plot(thf,hft, label="HF")
-    ax.plot(tpow,np.multiply(powt,stretch_power), label='Power$\cdot$'+str(stretch_power),lw=1)
+    ax.plot(ausfahrt.thf, ausfahrt.hft, label="HF")
+    ax.plot(ausfahrt.tpow, np.multiply(ausfahrt.powt, stretch_power), label='Power$\cdot$' + str(stretch_power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     if args.plot_hoehe == 1:
-        ax2.plot(talt,altt,lw=1)
+        ax2.plot(ausfahrt.talt, ausfahrt.altt, lw=1)
     ax.set_xlim([t[0]/3600,t[-1]/3600])
 
     ax.legend(loc='best')
@@ -692,14 +668,14 @@ if args.plot_pause == 1:
 
 ############### Critical Power:  ######################################################
 args.CP30 = 0
-if (args.CP == 1) and any(power > 0):
+if (args.CP == 1) and any(ausfahrt.power > 0):
     steps = 30
-    Int   = [0]*int(max(power))
-    Pint  = [0]*int(max(power))
+    Int   = [0]*int(max(ausfahrt.power))
+    Pint  = [0]*int(max(ausfahrt.power))
     # Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
     for i in range(const.lower_Plimit,len(Pint)):
         Int[i] = i
-        Pint[i] = len(power[power > i])
+        Pint[i] = len(ausfahrt.power[ausfahrt.power > i])
     # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
     steps = 15
     max_interval = 150*60
@@ -710,7 +686,7 @@ if (args.CP == 1) and any(power > 0):
     Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     for i in range(1,steps):
         print('Berechne max. Leistung für %d min (bis %d)...' % (i*step_size/60, max_interval/60), end='\r')
-        Psmooth = smooth(power,i*step_size)
+        Psmooth = smooth(ausfahrt.power, i * step_size)
         Int2[i] = max(Psmooth)
         Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
     print('\nFertig!\n')
@@ -788,7 +764,7 @@ for i in range(0,len(Runden)):
 
 if args.print_csv == 1:
     #csvdatei = ("%s.csv" % (startzeit.strftime("%y%m%d%H%M")))
-    file = open(csvdatei,"w")
+    file = open(ausfahrt.csvdatei,"w")
     #file.write("\"sep=;\"\r\n")
     file.write(ueberschrift1 + "\r\n")
     file.write(ueberschrift2 + "\r\n")

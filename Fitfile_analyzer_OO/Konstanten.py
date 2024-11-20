@@ -38,3 +38,5 @@ class Argumente:
                         self.CP  = int(sys.argv[4])
                         if len(sys.argv) > 5:
                             self.plot_bar  = int(sys.argv[5])
+                            if len(sys.argv) > 6:
+                                self.print_csv = int(sys.argv[6])
