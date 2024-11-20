@@ -10,16 +10,14 @@
 # https://www.perplexity.ai/
 
 from __future__ import division
-from fitparse   import FitFile
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes # , zoomed_inset_axes
-# from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-import numpy as np
-import sys
 from cycler import cycler
+
 from Konstanten import *
 from Ausfahrt import *
 from Math import *
+from Odometer import *
 
 ###################################### Settings ####################################################
 const = Konstanten()
@@ -35,105 +33,8 @@ if args.debug_print == 1:
 ausfahrt.lese_runden()
 ausfahrt.finde_zwischen_runden(const.schwelle_zwischen)
 ausfahrt.lese_zusammenfassung()
-
-for file_id in ausfahrt.fitfile.get_messages('file_id'):
-    for record_data in file_id:
-        if record_data.name == "manufacturer":
-            hersteller = record_data.value
-            print('Hersteller erkannt: %s' % hersteller)
-
-km = [0,0,0,0,0]
-bike = "Default"
-id_final = 1
-args.bike_id = 1
-if hersteller == "srm":
-    for bike_profile in ausfahrt.fitfile.get_messages('bike_profile'):
-        for record_data in bike_profile:
-            if record_data.name == "name":
-                bike = record_data.value
-                args.bike_id = int(bike[-1])
-
-                totfile = FitFile('Totals.fit')
-                for totals in totfile.get_messages('unknown_65292'):
-                    for record_data in totals:
-                        if record_data.name == "unknown_0":
-                            id_final = record_data.value
-                            #print(" * %s: %s" % (record_data.name, record_data.value))
-                        if record_data.name == "unknown_3":
-                            km[id_final] = record_data.value / 1000
-                bike = const.raeder[args.bike_id - 1]
-                id_final = args.bike_id
-
-# Bei Igpsport finde ich keinen Hinweise auf Radprofil, kann über Gewicht unterscheiden (alternativ Sensor-Id):
-elif hersteller == "igpsport":
-    totfile = FitFile('user.fit')
-    for totals in totfile.get_messages('bike_profile'):
-        for record_data in totals:
-            if record_data.name == "bike_weight":
-                bike_weight = record_data.value
-                if bike_weight == 8:
-                    args.bike_id = 1
-                elif bike_weight == 6:
-                    args.bike_id = 2
-                elif bike_weight == 7:
-                    args.bike_id = 3
-                else:
-                    args.bike_id = 4
-                id_final = args.bike_id
-                bike = const.raeder[args.bike_id - 1]
-    for totals in totfile.get_messages('bike_profile'):
-        for record_data in totals:
-            if record_data.name == "odometer":
-                km[args.bike_id] = record_data.value/1000
-
-elif hersteller == "bryton":
-    for bike_profile in ausfahrt.fitfile.get_messages('unknown_68'):
-        for record_data in bike_profile:
-            if record_data.name == "unknown_7":
-                id_final = record_data.value
-                args.bike_id = id_final
-                bike = const.raeder[0]
-                if id_final == 2:
-                    args.bike_id = 3
-                elif id_final == 0x10:
-                    args.bike_id = 2
-                elif id_final == 0x20:
-                    args.bike_id = 4
-                bike = const.raeder[args.bike_id - 1]
-                #Beim Rider 450 ist 0x10 Rad 1 und 0x20 Rad 2, daher:
-                if id_final > 2:
-                    id_final = id_final >> 4
-
-                #Remove \x00 at the end of the file (Korean coding?)
-                fileObject = open("System.ini", "r")
-                data = fileObject.read()
-                data = data.rstrip('\x00')
-                fileObject.close()
-                fileObject = open("System.ini", "w")
-                fileObject.write(data)
-                fileObject.close()
-                import configparser
-                config = configparser.ConfigParser()
-                config.read	("System.ini")
-                system = config['System']
-                trip2_str =('Trip2%d_km' % id_final)
-                km[args.bike_id] = system[trip2_str]
-elif hersteller == "garmin":
-    for Summary in ausfahrt.fitfile.get_messages('session'):
-        for record_data in Summary:
-            if record_data.name == "unknown_110":
-                bike = record_data.value
-            if record_data.name == "unknown_178":
-                km[args.bike_id] = record_data.value
-else:
-    print('Hersteller nicht implementiert, kann Odometer nicht lesen')
-
-kmstr = [' ;',' ;',' ;',' ;',' ;',' ;']
-kmstr[args.bike_id] = ("%s;" % str(km[args.bike_id]))
-kmstr = ('%s%s%s%s%s%s' % (kmstr[0],kmstr[1],kmstr[2],kmstr[3],kmstr[4],kmstr[5]))
-print("Rad: %s  (id: %d), Kilometerstand: %s" % (bike, id_final, str(km[args.bike_id])))
-print("===============")
-print()
+odo = Odometer()
+odo.lese_odometer(ausfahrt.fitfile)
 
 h = np.floor(ausfahrt.session.zeit/3600)
 m = np.floor((ausfahrt.session.zeit - h*3600)/60)
@@ -142,7 +43,6 @@ pausenzeit = ausfahrt.session.totalzeit - ausfahrt.session.zeit
 hp = np.floor(pausenzeit/3600)
 mp = np.floor((pausenzeit - hp*3600)/60)
 sp = pausenzeit - hp*3600 - mp*60
-#hf = list(map(add, hf, [args.Fitness]*len(hf)))
 
 # Replace all 'None' by 0s and calc. mean excluding zeros:
 ausfahrt.hf    = np.array([e if e is not None else 0 for e in ausfahrt.hf])
@@ -480,11 +380,11 @@ if (len(ausfahrt.Runden) > 0) & (args.plot_bar == 1):
 ############### Print für Tabelle:  ######################################################
 
 rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (ausfahrt.session.strecke / 1000, ausfahrt.session.avspeed, h, m, s, ausfahrt.session.v_max, kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, af, ausfahrt.session.NP, args.CP30, ac, ausfahrt.session.anstieg, tss, kmstr, hp, mp, sp, strZonen))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, af, ausfahrt.session.NP, args.CP30, ac, ausfahrt.session.anstieg, tss, odo.kmstr, hp, mp, sp, strZonen))
 for i in range(0, len(ausfahrt.Alle)):
     rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (ausfahrt.Alle[i].x / 1000, ausfahrt.Alle[i].speed, ausfahrt.Alle[i].h, ausfahrt.Alle[i].m, ausfahrt.Alle[i].s, ausfahrt.Alle[i].HF, ausfahrt.Alle[i].power, ausfahrt.Alle[i].anstieg, ausfahrt.Alle[i].v_max))
 rstr = rstr.replace('.',',')
-rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (ausfahrt.session.startzeit.day, ausfahrt.session.startzeit.month, args.bike_id, ausfahrt.session.startzeit.hour, ausfahrt.session.startzeit.minute, ausfahrt.session.startzeit.second, rstr))
+rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (ausfahrt.session.startzeit.day, ausfahrt.session.startzeit.month, odo.bike_id, ausfahrt.session.startzeit.hour, ausfahrt.session.startzeit.minute, ausfahrt.session.startzeit.second, rstr))
 
 print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
 print(rstr)
@@ -493,7 +393,7 @@ print(">")
 ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
 for i in range(0, len(ausfahrt.Runden)):
     ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
-ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(const.raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
+ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(odo.raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
 for i in range(0, len(ausfahrt.Runden)):
     ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
 
