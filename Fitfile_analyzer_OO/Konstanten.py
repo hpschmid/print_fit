@@ -15,7 +15,7 @@ class Konstanten:
 
 class Argumente:
     def __init__(self):
-        self.debug_print = 0  # show all records for debugging purposes
+        self.debug_print = 1  # show all records for debugging purposes
         self.plot_weg = 1  # plot data vs. distance
         self.plot_zeit = 1  # plot data vs. time
         self.plot_pause = 1  # plot data vs. time including pauses (plot vs. Uhrzeit)
