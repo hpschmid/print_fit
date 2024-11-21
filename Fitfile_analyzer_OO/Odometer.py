@@ -14,7 +14,7 @@ class Odometer:
         for file_id in fitfile.get_messages('file_id'):
             for record_data in file_id:
                 if record_data.name == "manufacturer":
-                    hersteller = record_data.value
+                    self.hersteller = record_data.value
                     print('Hersteller erkannt: %s' % self.hersteller)
 
         if self.hersteller == "srm":
@@ -29,7 +29,6 @@ class Odometer:
                             for record_data1 in totals:
                                 if record_data1.name == "unknown_0":
                                     self.id_final = record_data1.value
-                                    #print(" * %s: %s" % (record_data.name, record_data.value))
                                 if record_data1.name == "unknown_3":
                                     self.km[self.id_final] = record_data1.value / 1000
                         self.bike = self.raeder[self.bike_id - 1]

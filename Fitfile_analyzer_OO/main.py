@@ -39,14 +39,6 @@ fahrt.filtere_werte(const)
 odo = Odometer()
 odo.lese_odometer(fahrt.fitfile)
 
-############## Plots:
-try:
-    fahrt.cad = np.array(fahrt.cad)
-    fahrt.cad[fahrt.cad > 130] = None
-    fahrt.cad[fahrt.cad < 30] = None
-except:
-    print("Keine Kadenz verfuegbar")
-
 TB, strZonen = berechne_trainingsbereiche(const, fahrt)
 skala = Skalen()
 skala.finde_skalierung(fahrt, const, fahrt.Pprint)
@@ -93,15 +85,15 @@ if args.plot_weg == 1:
         ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 134, ("%d W" % fahrt.Zwischen[i].power), color='y')
         ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
 
-    ax.plot(np.divide(fahrt.xcad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.divide(fahrt.xspeed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
+    ax.plot(np.divide(fahrt.x_cad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
+    ax.plot(np.divide(fahrt.x_speed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
     ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
-    ax.plot(np.divide(fahrt.xpow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
+    ax.plot(np.divide(fahrt.x_pow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
     ax.hlines(const.tbPow * skala.power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
     if args.plot_hoehe == 1:
-        ax2.plot(np.divide(fahrt.xalt, 1000), fahrt.alt, lw=1)
+        ax2.plot(np.divide(fahrt.x_alt, 1000), fahrt.alt, lw=1)
     ax2.set_xlim([0, max(fahrt.x) / 1000])
 
     ax.legend(loc='best')
@@ -202,15 +194,15 @@ if args.plot_pause == 1:
     plt.rc('lines', linewidth=2)
 
     #ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
-    ax.plot(fahrt.tcad, fahrt.cadt, lw=0.5, label ="Cadence")
-    ax.plot(fahrt.tspeed, np.multiply(fahrt.speedt, skala.speed), label='Speed$\cdot$' + str(skala.speed))
+    ax.plot(fahrt.t_cad, fahrt.cad_t, lw=0.5, label ="Cadence")
+    ax.plot(fahrt.t_speed, np.multiply(fahrt.speed_t, skala.speed), label='Speed$\cdot$' + str(skala.speed))
     #ax.plot(np.linspace(0,len(thf)/3600,len(hft)),hft, label="HF")
     ax.plot(fahrt.thf, fahrt.hft, label="HF")
-    ax.plot(fahrt.tpow, np.multiply(fahrt.powt, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
+    ax.plot(fahrt.t_pow, np.multiply(fahrt.pow_t, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
     #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     if args.plot_hoehe == 1:
-        ax2.plot(fahrt.talt, fahrt.altt, lw=1)
+        ax2.plot(fahrt.t_alt, fahrt.alt_t, lw=1)
     ax.set_xlim([fahrt.t[0] / 3600, fahrt.t[-1] / 3600])
 
     ax.legend(loc='best')
@@ -228,7 +220,7 @@ if (args.CP == 1) and any(fahrt.power > 0):
     for i in range(const.lower_Plimit,len(Pint)):
         Int[i] = i
         Pint[i] = len(fahrt.power[fahrt.power > i])
-    # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchnitt
+    # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchschnitt
     steps = 15
     max_interval = 150*60
     step_size = int(max_interval/steps)

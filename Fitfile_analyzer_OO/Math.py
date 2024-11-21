@@ -17,22 +17,22 @@ def berechne_trainingsbereiche(const, fahrt):
         if i == (len(const.zonen)-1):
             if fahrt.session.NP == 0:
                 intens_zonen[i] = sum(j > const.zonen[i]  for j in list(filter(None, fahrt.hf)))
-                text_zonen = ("(HF >%2d Schläge) " % (const.zonen[i]))
+                message = ("(HF >%2d Schläge) " % (const.zonen[i]))
             else:
                 intens_zonen[i] = sum(j > const.tbPow[i]  for j in list(filter(None,fahrt.P30)))
-                text_zonen = ("(>%2d W) " % (const.tbPow[i]))
+                message = ("(>%2d W) " % (const.tbPow[i]))
         else:
             if fahrt.session.NP == 0:
                 intens_zonen[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, fahrt.hf)))
-                text_zonen = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
+                message = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
             else:
                 intens_zonen[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,fahrt.P30)))
-                text_zonen = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
+                message = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
 
         hz = np.floor(intens_zonen[i]/3600)
         mz = np.floor((intens_zonen[i] - hz*3600)/60)
         sz = intens_zonen[i] - hz*3600 - mz*60
-        print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + text_zonen)
+        print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + message)
         text_zonen = ("%s %2d:%2d:%2d;" % (text_zonen,hz,mz,sz))
 
     return  intens_zonen, text_zonen

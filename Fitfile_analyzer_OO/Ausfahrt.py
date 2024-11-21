@@ -8,44 +8,44 @@ from Math import *
 
 class Ausfahrt:
     def __init__(self):
-        self.fitfile = None
+        self.fitfile  = None
         self.csvdatei = None
-        self.Runden = []
+        self.Runden   = []
         self.Zwischen = []
-        self.session = Zusammenfassung()
-        self.Alle  = []
-        self.x     = []
-        self.t     = []
-        self.speed = [] # Geschwindigkeit vs. Fahrzeit
-        self.speedt= [] # Geschwindigkeit vs. Uhrzeit
-        self.xspeed= [] # Weg Achse für Geschwindigkeit
-        self.tspeed= [] # Uhrzeit Achse für Geschwindigkeit
-        self.hf    = [] # Herzfrequnez vs. Fahrzeit
-        self.hft   = [] # etc.
-        self.xhf   = []
-        self.thf   = []
-        self.power = []
-        self.powt  = []
-        self.xpow  = []
-        self.tpow  = []
-        self.cad   = []
-        self.cadt  = []
-        self.xcad  = []
-        self.tcad  = []
-        self.alt   = []
-        self.altt  = []
-        self.xalt  = []
-        self.talt  = []
-        self.T     = [] # Temperatur
-        self.tT    = []
-        self.h     = 0
-        self.m     = 0
-        self.s     = 0
-        self.hp    = 0
-        self.mp    = 0
-        self.sp    = 0
-        self.Pprint = 0
-        self.P30   = 0
+        self.session  = Zusammenfassung()
+        self.Alle     = []
+        self.x        = []
+        self.t        = []
+        self.speed    = [] # Geschwindigkeit vs. Fahrzeit
+        self.speed_t  = [] # Geschwindigkeit vs. Uhrzeit
+        self.x_speed  = [] # Weg Achse für Geschwindigkeit
+        self.t_speed  = [] # Uhrzeit Achse für Geschwindigkeit
+        self.hf       = [] # Herzfrequenz vs. Fahrzeit
+        self.hft      = [] # etc.
+        self.xhf      = []
+        self.thf      = []
+        self.power    = []
+        self.pow_t    = []
+        self.x_pow    = []
+        self.t_pow    = []
+        self.cad      = []
+        self.cad_t    = []
+        self.x_cad    = []
+        self.t_cad    = []
+        self.alt      = []
+        self.alt_t    = []
+        self.x_alt    = []
+        self.t_alt    = []
+        self.T        = [] # Temperatur
+        self.tT       = []
+        self.h        = 0
+        self.m        = 0
+        self.s        = 0
+        self.hp       = 0
+        self.mp       = 0
+        self.sp       = 0
+        self.Pprint   = 0
+        self.P30      = 0
 
     def get_filename(self,args):
         list_of_files = glob.glob('[0-9]*.fit') # Search for newest Fitfile beginning with a number
@@ -89,53 +89,53 @@ class Ausfahrt:
                 self.t = [temp]
             temp = record.get_value('enhanced_speed')
             if temp is not None:
-                self.speedt.append(temp * 3.6)
-                self.tspeed.append((self.t[-1] / float(3600)))
+                self.speed_t.append(temp * 3.6)
+                self.t_speed.append((self.t[-1] / float(3600)))
                 self.speed.append(temp * 3.6)
-                self.xspeed.append(self.x[-1])
+                self.x_speed.append(self.x[-1])
             self.hft.append(record.get_value('heart_rate'))
             try:
                 self.thf.append(self.t[-1] / float(3600))
             except:
                 del self.hft[-1]
             try:
-              if self.speedt[-1] != 0:
+              if self.speed_t[-1] != 0:
                 self.hf.append(self.hft[-1])
                 self.xhf.append((self.x[-1]))
             except:
               pass
-            self.powt.append(record.get_value('power'))
+            self.pow_t.append(record.get_value('power'))
             try:
-                self.tpow.append(self.t[-1] / float(3600))
+                self.t_pow.append(self.t[-1] / float(3600))
             except:
-                del self.powt[-1]
+                del self.pow_t[-1]
             try:
-              if self.speedt[-1] != 0:
-                self.power.append(self.powt[-1])
-                self.xpow.append(self.x[-1])
+              if self.speed_t[-1] != 0:
+                self.power.append(self.pow_t[-1])
+                self.x_pow.append(self.x[-1])
             except:
                 pass
 
-            self.altt.append(record.get_value('enhanced_altitude'))
+            self.alt_t.append(record.get_value('enhanced_altitude'))
             try:
-                self.talt.append(self.t[-1] / float(3600))
+                self.t_alt.append(self.t[-1] / float(3600))
             except:
-                del self.altt[-1]
+                del self.alt_t[-1]
             try:
-              if self.speedt[-1] != 0:
-                self.alt.append(self.altt[-1])
-                self.xalt.append(self.x[-1])
+              if self.speed_t[-1] != 0:
+                self.alt.append(self.alt_t[-1])
+                self.x_alt.append(self.x[-1])
             except:
               pass
-            self.cadt.append(record.get_value('cadence'))
+            self.cad_t.append(record.get_value('cadence'))
             try:
-                self.tcad.append(self.t[-1] / float(3600))
+                self.t_cad.append(self.t[-1] / float(3600))
             except:
-                del self.cadt[-1]
+                del self.cad_t[-1]
             try:
-              if self.speedt[-1] != 0:
-                self.cad.append(self.cadt[-1])
-                self.xcad.append(self.x[-1])
+              if self.speed_t[-1] != 0:
+                self.cad.append(self.cad_t[-1])
+                self.x_cad.append(self.x[-1])
             except:
               pass
 
@@ -209,7 +209,7 @@ class Ausfahrt:
                 self.Runden[-1].e_linie = self.Runden[-1].x_end/1000
                 self.Runden[-1].e_zeitlinie = self.Runden[-1].z_end/3600
                 self.Runden[-1].e_pauslinie = self.Runden[-1].t_end/3600
-                self.Runden[-1].pos = ((np.abs(np.array(self.xspeed) - self.Runden[-1].e_linie * 1000)).argmin())
+                self.Runden[-1].pos = ((np.abs(np.array(self.x_speed) - self.Runden[-1].e_linie * 1000)).argmin())
             print()
 
     def finde_zwischen_runden(self, schwelle):
@@ -248,10 +248,10 @@ class Ausfahrt:
                 self.Zwischen.append(Runde())
                 self.Zwischen[-1].x = self.x[-1] - self.Runden[-1].x_end
                 self.Zwischen[-1].z_start = self.Runden[-1].z_end
-                self.Zwischen[-1].z_end = len(self.tspeed) # =len(hf)???
+                self.Zwischen[-1].z_end = len(self.t_speed) # =len(hf)???
                 self.Zwischen[-1].t_start = self.Runden[-1].t_end
                 self.Zwischen[-1].t_end = self.t[-1]
-                self.Zwischen[-1].zeit = len(self.tspeed) - self.Runden[-1].z_end
+                self.Zwischen[-1].zeit = len(self.t_speed) - self.Runden[-1].z_end
                 self.Zwischen[-1].x_start = self.Runden[-1].x_end
                 self.Zwischen[-1].x_end = self.x[-1]
                 self.Alle.append(self.Zwischen[-1])
@@ -331,8 +331,8 @@ class Ausfahrt:
             self.session.av_cad = 0
 
         self.power = np.array([e if e is not None else 0 for e in self.power])
-        self.powt   = [e if e is not None else 0 for e in self.powt]
-        self.powt   = smooth(self.powt, const.smooth_Pprint)
+        self.pow_t   = [e if e is not None else 0 for e in self.pow_t]
+        self.pow_t   = smooth(self.pow_t, const.smooth_Pprint)
         self.Pprint = smooth(self.power, const.smooth_Pprint)
         self.P30    = smooth(self.power, const.smooth_P30)
         if any(self.P30 > 0):
@@ -355,6 +355,13 @@ class Ausfahrt:
             else:
                 print("Kein KCal und keine HF verfügbar Wert vom Gerät, schätze kCal aus tss")
                 self.session.kCal = self.session.tss*7.623
+        # Filtere sehr hohe und sehr niedrige Kadenz-Werte:
+        try:
+            self.cad = np.array(self.cad)
+            self.cad[self.cad > 130] = None
+            self.cad[self.cad < 30] = None
+        except:
+            print("Keine Kadenz verfuegbar")
 
     def rechne_gesamtzeit(self):
         self.h = np.floor(self.session.zeit / 3600)
