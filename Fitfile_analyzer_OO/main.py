@@ -46,6 +46,8 @@ skala.finde_skalierung(fahrt, const, fahrt.Pprint)
 
 fen1.destroy()
 
+zeichnungen = Plots()
+
 ################# Nach Weg: ###########################################################################
 
 fenster = [19.5, 10]
@@ -224,39 +226,7 @@ if (args.CP == 1) and any(fahrt.power > 0):
 
 ############### Barplot:            ######################################################
 if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
-    bar_r = np.zeros(len(fahrt.Alle))
-    bar_x = np.zeros(len(fahrt.Alle))
-    bar_v = np.zeros(len(fahrt.Alle))
-    bar_p = np.zeros(len(fahrt.Alle))
-    bar_h = np.zeros(len(fahrt.Alle))
-    for i in range(0, len(fahrt.Alle)):
-        bar_r[i] = i+1
-        bar_x[i] = fahrt.Alle[i].x / 1000
-        bar_v[i] = fahrt.Alle[i].speed
-        bar_p[i] = fahrt.Alle[i].power
-        bar_h[i] = fahrt.Alle[i].anstieg
-
-    plt.xkcd()
-    fig = plt.figure(figsize=fenster)
-    ax = fig.add_subplot(1, 1, 1)
-    ax.grid(color='k', linestyle=':', linewidth=1)
-    plt.xlabel('Runde')
-    plt.ylabel('km, km/h')
-    ax.bar(bar_r-0.3,bar_x,0.2,lw=2, color="orange", label = "km")
-    ax.bar(bar_r-0.1,bar_v,0.2,lw=2, color="blue", label = "km/h")
-    ax.bar(bar_r + 0.1, np.zeros(len(fahrt.Alle)), 0.2, lw=2, color="m", label ="Leistung")
-    ax.bar(bar_r + 0.3, np.zeros(len(fahrt.Alle)), 0.2, lw=2, color="grey", label ="Anstieg")
-    plt.xticks(bar_r)
-    ax.legend(loc='best')
-
-    ax2 = ax.twinx()
-    # ax2.set_prop_cycle(cycler('color', ['k']))
-    ax2.set_ylabel('W, hm')
-    ax2.bar(bar_r+0.1,bar_p,0.2,lw=2, color="m", label = "Leistung")
-    ax2.bar(bar_r+0.3,bar_h,0.2,lw=2, color="grey", label = "Anstieg")
-    ax.legend(loc='best')
-
-    plt.show()
+    zeichnungen.barplot(fahrt.Alle)
 
 zeile = Text()
 zeile.print_text_f_tabelle(fahrt.session, odo, CP, fahrt.Alle, fahrt.Runden, args.print_csv, fahrt.csvdatei)

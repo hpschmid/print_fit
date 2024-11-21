@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
 class Text:
     def __init__(self):
         pass
@@ -27,3 +30,41 @@ class Text:
             file.write(ueberschrift2 + "\r\n")
             file.write(rstr)
             file.close()
+class Plots:
+    def __init__(self):
+        self.fenster = [19.5, 10]
+
+    def barplot(self, alle):
+        bar_r = np.zeros(len(alle))
+        bar_x = np.zeros(len(alle))
+        bar_v = np.zeros(len(alle))
+        bar_p = np.zeros(len(alle))
+        bar_h = np.zeros(len(alle))
+        for i in range(0, len(alle)):
+            bar_r[i] = i+1
+            bar_x[i] = alle[i].x / 1000
+            bar_v[i] = alle[i].speed
+            bar_p[i] = alle[i].power
+            bar_h[i] = alle[i].anstieg
+
+        plt.xkcd()
+        fig = plt.figure(figsize=self.fenster)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.grid(color='k', linestyle=':', linewidth=1)
+        plt.xlabel('Runde')
+        plt.ylabel('km, km/h')
+        ax.bar(bar_r-0.3,bar_x,0.2,lw=2, color="orange", label = "km")
+        ax.bar(bar_r-0.1,bar_v,0.2,lw=2, color="blue", label = "km/h")
+        ax.bar(bar_r + 0.1, np.zeros(len(alle)), 0.2, lw=2, color="m", label ="Leistung")
+        ax.bar(bar_r + 0.3, np.zeros(len(alle)), 0.2, lw=2, color="grey", label ="Anstieg")
+        plt.xticks(bar_r)
+        ax.legend(loc='best')
+
+        ax2 = ax.twinx()
+        # ax2.set_prop_cycle(cycler('color', ['k']))
+        ax2.set_ylabel('W, hm')
+        ax2.bar(bar_r+0.1,bar_p,0.2,lw=2, color="m", label = "Leistung")
+        ax2.bar(bar_r+0.3,bar_h,0.2,lw=2, color="grey", label = "Anstieg")
+        ax.legend(loc='best')
+
+        plt.show()
