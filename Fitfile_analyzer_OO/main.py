@@ -11,7 +11,6 @@
 
 from __future__ import division
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes # , zoomed_inset_axes
 from cycler import cycler
 
 from Konstanten import *
@@ -40,92 +39,20 @@ fahrt.filtere_werte(const)
 odo = Odometer()
 odo.lese_odometer(fahrt.fitfile)
 
-TB, fahrt.session.strZonen = berechne_trainingsbereiche(const, fahrt)
+fahrt.session.TB, fahrt.session.strZonen = berechne_trainingsbereiche(const, fahrt)
 skala = Skalen()
 skala.finde_skalierung(fahrt, const, fahrt.Pprint)
 
 fen1.destroy()
 
 zeichnungen = Plots()
-
 ################# Nach Weg: ###########################################################################
-
-fenster = [19.5, 10]
 if args.plot_weg == 1:
-    plt.xkcd()
-    fig = plt.figure(figsize=fenster)
-    # manager = plt.get_current_fig_manager()
-    # manager.window.maximize() # does not work??
-    # mng = plt.get_current_fig_manager()
-    # mng.resize(*mng.window.maximize()) # maximizes over all screens
-    ax = fig.add_subplot(1, 1, 1)
-    ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
-    ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
-    ax.set_ylim([0,const.max_hf])
-    ax.grid(color='k', linestyle=':', linewidth=1)
-    plt.xlabel('Distance (km)')
-    plt.ylabel('Cadence, Speed, HF')
-    ax2 = ax.twinx()
-    ax2.set_prop_cycle(cycler('color', ['k']))
-    ax2.set_ylabel('Altitude')
-
-    plt.rc('lines', linewidth=2)
-
-    for i in range(0, len(fahrt.Runden)):
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 170, ("Runde %d" % (i + 1)), color='y')
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 161, ("%d km" % (fahrt.Runden[i].x / 1000)), color='y')
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 152, ("%d km/h" % (round(fahrt.Runden[i].speed))), color='y')
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 143, ("%d HS" % fahrt.Runden[i].HF), color='y')
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 134, ("%d W" % fahrt.Runden[i].power), color='y')
-        ax.text(np.mean([fahrt.Runden[i].s_linie, fahrt.Runden[i].e_linie]), 125, ("%02d:%02d:%02d" % (fahrt.Runden[i].h, fahrt.Runden[i].m, fahrt.Runden[i].s)), color='y')
-        ax.vlines(fahrt.Runden[i].s_linie, [0], [200], lw=2, color='y')
-        ax.vlines(fahrt.Runden[i].e_linie, [0], [200], lw=2, color='y')
-    for i in range(0, len(fahrt.Zwischen)):
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 170, ("Zwischen %d" % (i + 1)), color='y')
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 161, ("%d km" % (fahrt.Zwischen[i].x / 1000)), color='y')
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 152, ("%d km/h" % (round(fahrt.Zwischen[i].speed))), color='y')
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 143, ("%d HS" % fahrt.Zwischen[i].HF), color='y')
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 134, ("%d W" % fahrt.Zwischen[i].power), color='y')
-        ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
-
-    ax.plot(np.divide(fahrt.x_cad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
-    ax.plot(np.divide(fahrt.x_speed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
-    ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
-    ax.plot(np.divide(fahrt.x_pow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
-    ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
-    ax.hlines(const.tbPow * skala.power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
-    if args.plot_hoehe == 1:
-        ax2.plot(np.divide(fahrt.x_alt, 1000), fahrt.alt, lw=1)
-    ax2.set_xlim([0, max(fahrt.x) / 1000])
-
-    ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
-
-    labels = 'TB0','TB1','TB2','TB3','TB4'
-    TB = TB[0:5]
-    explode = (0.05, 0.05, 0.05, 0.5,1)
-    colors = ['lightskyblue', 'yellowgreen', 'yellow', 'orange', 'lightcoral']
-    axins = inset_axes(ax,
-              width=1.5,  # width = 30% of parent_bbox
-              height=1.5,  # height : 1 inch
-              loc=3)
-    patches, texts, autotexts = plt.pie(TB, explode=explode, colors=colors, labels=labels, startangle=90,
-        autopct='%.0f%%', shadow=True, radius=1)
-    # Make the labels on the small plot easier to read.
-    for te in texts:
-        te.set_size('smaller')
-    for te in autotexts:
-        te.set_size('x-small')
-    autotexts[0].set_color('y')
-
-    fig.patch.set_alpha(0)
-    ax2.patch.set_alpha(0.5)
-    axins.patch.set_alpha(1)
-
+    zeichnungen.wegplot(args, const, skala, fahrt)
     plt.show()
 
 ################# Nach Zeit (ohne Pausen): ###########################################################################
+fenster = [19.5, 10]
 
 if args.plot_zeit == 1:
     plt.xkcd()
