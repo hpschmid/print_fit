@@ -74,40 +74,79 @@ class Plots:
             ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 134, ("%d W" % fahrt.Zwischen[i].power), color='y')
             ax.text(np.mean([fahrt.Zwischen[i].x_start, fahrt.Zwischen[i].x_end]) / 1000, 125, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
 
-            ax.plot(np.divide(fahrt.x_cad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
-            ax.plot(np.divide(fahrt.x_speed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
-            ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
-            ax.plot(np.divide(fahrt.x_pow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
-            ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-            ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
-            ax.hlines(const.tbPow * skala.power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
-            if args.plot_hoehe == 1:
-                ax2.plot(np.divide(fahrt.x_alt, 1000), fahrt.alt, lw=1)
-            ax2.set_xlim([0, max(fahrt.x) / 1000])
+        ax.plot(np.divide(fahrt.x_cad, 1000), fahrt.cad, lw=0.5, label ="Cadence")
+        ax.plot(np.divide(fahrt.x_speed, 1000), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
+        ax.plot(np.divide(fahrt.xhf, 1000), fahrt.hf, label="HF")
+        ax.plot(np.divide(fahrt.x_pow, 1000), np.multiply(fahrt.Pprint, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
+        ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
+        ax.hlines(const.zonen, [0], [max(fahrt.x) / 1000], lw=1, colors='r')
+        ax.hlines(const.tbPow * skala.power, [0], [max(fahrt.x) / 1000], lw=1, colors='m')
+        if args.plot_hoehe == 1:
+            ax2.plot(np.divide(fahrt.x_alt, 1000), fahrt.alt, lw=1)
+        ax2.set_xlim([0, max(fahrt.x) / 1000])
 
-            ax.legend(loc='best')
-            #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
+        ax.legend(loc='best')
+        #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
-            labels = 'TB0','TB1','TB2','TB3','TB4'
-            tb = fahrt.session.TB[0:5]
-            explode = (0.05, 0.05, 0.05, 0.5,1)
-            colors = ['lightskyblue', 'yellowgreen', 'yellow', 'orange', 'lightcoral']
-            axins = inset_axes(ax,
-                      width=1.5,  # width = 30% of parent_bbox
-                      height=1.5,  # height : 1 inch
-                      loc=3)
-            patches, texts, autotexts = plt.pie(tb, explode=explode, colors=colors, labels=labels, startangle=90,
-                autopct='%.0f%%', shadow=True, radius=1)
-            # Make the labels on the small plot easier to read.
-            for te in texts:
-                te.set_size('smaller')
-            for te in autotexts:
-                te.set_size('x-small')
-            autotexts[0].set_color('y')
+        labels = 'TB0','TB1','TB2','TB3','TB4'
+        tb = fahrt.session.TB[0:5]
+        explode = (0.05, 0.05, 0.05, 0.5,1)
+        colors = ['lightskyblue', 'yellowgreen', 'yellow', 'orange', 'lightcoral']
+        axins = inset_axes(ax,
+                  width=1.5,  # width = 30% of parent_bbox
+                  height=1.5,  # height : 1 inch
+                  loc=3)
+        patches, texts, autotexts = plt.pie(tb, explode=explode, colors=colors, labels=labels, startangle=90,
+            autopct='%.0f%%', shadow=True, radius=1)
+        # Make the labels on the small plot easier to read.
+        for te in texts:
+            te.set_size('smaller')
+        for te in autotexts:
+            te.set_size('x-small')
+        autotexts[0].set_color('y')
 
-            fig.patch.set_alpha(0)
-            ax2.patch.set_alpha(0.5)
-            axins.patch.set_alpha(1)
+        fig.patch.set_alpha(0)
+        ax2.patch.set_alpha(0.5)
+        axins.patch.set_alpha(1)
+
+    def zeitplot(self, args, const, skala, fahrt):
+        plt.xkcd()
+        fig = plt.figure(figsize=self.fenster)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
+        ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
+        ax.set_ylim([0,const.max_hf])
+        ax.grid(color='k', linestyle=':', linewidth=1)
+        ax.hlines(const.zonen, [0], [fahrt.session.totalzeit], lw=1)
+        for i in range(0, len(fahrt.Runden)):
+          ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 170, ("Runde %d" % (i + 1)), color='y')
+          ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 161, ("%d km/h" % fahrt.Runden[i].speed), color='y')
+          ax.text(np.mean([fahrt.Runden[i].s_zeitlinie, fahrt.Runden[i].e_zeitlinie]), 152, ("%02d:%02d:%02d" % (fahrt.Runden[i].h, fahrt.Runden[i].m, fahrt.Runden[i].s)), color='y')
+          ax.vlines(fahrt.Runden[i].s_zeitlinie, [0], [200], lw=2, color='y')
+          ax.vlines(fahrt.Runden[i].e_zeitlinie, [0], [200], lw=2, color='y')
+        for i in range(0, len(fahrt.Zwischen)):
+            ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
+            ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 161, ("%d km/h" % fahrt.Zwischen[i].speed), color='y')
+            ax.text(np.mean([fahrt.Zwischen[i].z_start, fahrt.Zwischen[i].z_end]) / 3600, 152, ("%02d:%02d:%02d" % (fahrt.Zwischen[i].h, fahrt.Zwischen[i].m, fahrt.Zwischen[i].s)), color='y')
+
+        plt.xlabel('Time (h)')
+        plt.ylabel('Cadence, Speed, HF')
+        ax2 = ax.twinx()
+        ax2.set_prop_cycle(cycler('color', ['k']))
+        ax2.set_ylabel('Altitude')
+
+        plt.rc('lines', linewidth=2)
+
+        ax.plot(np.linspace(0, len(fahrt.T) / 3600, len(fahrt.T)), np.multiply(fahrt.T, skala.temp), lw=0.2, color="orange", label ="Temperature$\cdot$" + str(skala.temp))
+        ax.plot(np.linspace(0, len(fahrt.cad) / 3600, len(fahrt.cad)), fahrt.cad, lw=0.5, label ="Cadence")
+        ax.plot(np.linspace(0, len(fahrt.speed) / 3600, len(fahrt.speed)), np.multiply(fahrt.speed, skala.speed), label='Speed$\cdot$' + str(skala.speed))
+        ax.plot(np.linspace(0, len(fahrt.hf) / 3600, len(fahrt.hf)), fahrt.hf, label="HF")
+        ax.plot(np.linspace(0,len(fahrt.Pprint)/3600,len(fahrt.Pprint)),np.multiply(fahrt.Pprint,skala.power), label='Power$\cdot$'+str(skala.power),lw=1)
+        ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
+        if args.plot_hoehe == 1:
+            ax2.plot(np.linspace(0, len(fahrt.alt) / 3600, len(fahrt.alt)), fahrt.alt, lw=1)
+        ax.set_xlim([0, len(fahrt.speed) / 3600])
+        ax.legend(loc='best')
 
     def barplot(self, alle):
         bar_r = np.zeros(len(alle))
