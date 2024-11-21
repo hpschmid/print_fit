@@ -48,18 +48,18 @@ class Ausfahrt:
 
         fen1 = Tk()                              # Create window
         fen1.title("FitFileParser")
-        T = Text(fen1, height=5, width=40)
-        T.pack()
-        T.insert(END, "Asking for filename\n\n")
+        text = Text(fen1, height=5, width=40)
+        text.pack()
+        text.insert(END, "Asking for filename\n\n")
         name = filedialog.askopenfilename(filetypes=[("Fit files","*.fit")],initialfile=latest_file)
         self.fitfile = FitFile(name)
         self.csvdatei = name.replace('fit','csv')
-        T.insert(END, "Parsing %s\n" % (os.path.basename(name)))
+        text.insert(END, "Parsing %s\n" % (os.path.basename(name)))
         if args.print_csv == 1:
-            T.insert(END, "Will create %s\n" % (os.path.basename(self.csvdatei)))
+            text.insert(END, "Will create %s\n" % (os.path.basename(self.csvdatei)))
         else:
-            T.insert(END, "\n")
-        T.insert(END, "Wait a moment...\n")
+            text.insert(END, "\n")
+        text.insert(END, "Wait a moment...\n")
         fen1.update()
 
         return fen1

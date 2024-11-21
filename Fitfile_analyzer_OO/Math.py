@@ -49,19 +49,19 @@ class Skalen:
                 self.power = self.power * 2
             while max(power_print)*self.power > (const.max_hf * 1.1):
                 self.power = self.power / 2
-            print ("stretch_power: " + str(self.power))
+            print ("Skala Power: " + str(self.power))
 
         while max(fahrt.T)*self.temp < (const.max_hf / 2 * 1.1):
             self.temp = self.temp * 2
         while max(fahrt.T)*self.temp > (const.max_hf * 1.1):
             self.temp = self.temp / 2
-        print ("stretch_temperature: " + str(self.temp))
+        print ("Skala Temperatur: " + str(self.temp))
 
         if max(fahrt.speed) > 0:
             while max(fahrt.speed)*self.speed < const.max_hf/2*1.1:
                 self.speed = self.speed * 2
 
-        print("stretch_speed: " + str(self.speed))
+        print("Skala Speed: " + str(self.speed))
 
 
 class CriticalPower:
