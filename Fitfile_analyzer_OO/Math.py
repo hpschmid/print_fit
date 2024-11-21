@@ -11,32 +11,31 @@ def datetime_to_local(utc_datetime):
     return utc_datetime + offset
 
 def berechne_trainingsbereiche(const, fahrt):
-    TB = np.zeros(len(const.zonen)+1)
-    strZonen  = " "
-    #print(range(0,len(const.zonen)))
+    intens_zonen = np.zeros(len(const.zonen)+1) # Intensitätszonen (Trainingsbereiche)
+    text_zonen  = " "
     for i in range(0,(len(const.zonen))):
-      if i == (len(const.zonen)-1):
-        if fahrt.session.NP == 0:
-          TB[i] = sum(j > const.zonen[i]  for j in list(filter(None, fahrt.hf)))
-          messageZ = ("(HF >%2d Schläge) " % (const.zonen[i]))
+        if i == (len(const.zonen)-1):
+            if fahrt.session.NP == 0:
+                intens_zonen[i] = sum(j > const.zonen[i]  for j in list(filter(None, fahrt.hf)))
+                text_zonen = ("(HF >%2d Schläge) " % (const.zonen[i]))
+            else:
+                intens_zonen[i] = sum(j > const.tbPow[i]  for j in list(filter(None,fahrt.P30)))
+                text_zonen = ("(>%2d W) " % (const.tbPow[i]))
         else:
-          TB[i] = sum(j > const.tbPow[i]  for j in list(filter(None,fahrt.P30)))
-          messageZ = ("(>%2d W) " % (const.tbPow[i]))
-      else:
-        if fahrt.session.NP == 0:
-          TB[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, fahrt.hf)))
-          messageZ = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
-        else:
-          TB[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,fahrt.P30)))
-          messageZ = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
+            if fahrt.session.NP == 0:
+                intens_zonen[i] = sum(((j > const.zonen[i]) and (j <= const.zonen[i+1])) for j in list(filter(None, fahrt.hf)))
+                text_zonen = ("(HF %2d - %2d) " % (const.zonen[i],const.zonen[i+1]))
+            else:
+                intens_zonen[i] = sum(((j > const.tbPow[i]) and (j <= const.tbPow[i+1])) for j in list(filter(None,fahrt.P30)))
+                text_zonen = ("(%2d - %2d W) " % (const.tbPow[i],const.tbPow[i+1]))
 
-      hz = np.floor(TB[i]/3600)
-      mz = np.floor((TB[i] - hz*3600)/60)
-      sz = TB[i] - hz*3600 - mz*60
-      print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + messageZ)
-      strZonen = ("%s %2d:%2d:%2d;" % (strZonen,hz,mz,sz))
+        hz = np.floor(intens_zonen[i]/3600)
+        mz = np.floor((intens_zonen[i] - hz*3600)/60)
+        sz = intens_zonen[i] - hz*3600 - mz*60
+        print("Training in Zone %d: %02d:%02d:%02d " % (i,hz,mz,sz) + text_zonen)
+        text_zonen = ("%s %2d:%2d:%2d;" % (text_zonen,hz,mz,sz))
 
-      return  TB, strZonen
+    return  intens_zonen, text_zonen
 
 class Skalen:
     def __init__(self):

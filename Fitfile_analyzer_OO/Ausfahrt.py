@@ -319,7 +319,7 @@ class Ausfahrt:
                     print(" * %s: %s" % (record_data.name, record_data.value))
             print()
 
-    def prepare_values(self, const):
+    def filtere_werte(self, const):
         # Replace all 'None' by 0s and calc. mean excluding zeros:
         self.hf    = np.array([e if e is not None else 0 for e in self.hf])
         self.session.av_hf    = np.mean(self.hf[self.hf > 0])

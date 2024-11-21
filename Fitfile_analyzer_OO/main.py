@@ -34,7 +34,7 @@ fahrt.lese_runden()
 fahrt.finde_zwischen_runden(const.schwelle_zwischen)
 fahrt.lese_zusammenfassung()
 fahrt.rechne_gesamtzeit()
-fahrt.prepare_values(const)
+fahrt.filtere_werte(const)
 
 odo = Odometer()
 odo.lese_odometer(fahrt.fitfile)
