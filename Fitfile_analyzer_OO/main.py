@@ -161,9 +161,7 @@ if args.plot_zeit == 1:
     if args.plot_hoehe == 1:
         ax2.plot(np.linspace(0, len(fahrt.alt) / 3600, len(fahrt.alt)), fahrt.alt, lw=1)
     ax.set_xlim([0, len(fahrt.speed) / 3600])
-
     ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
     plt.show()
 
@@ -178,7 +176,6 @@ if args.plot_pause == 1:
     ax.set_ylim([0,const.max_hf])
     ax.grid(color='k', linestyle=':', linewidth=1)
     ax.hlines(const.zonen, [fahrt.t[0] / 3600], [fahrt.t[-1] / 3600], lw=1)
-    # ax.vlines(ereignis,[0],[200],lw=2,color='g')
     for i in range(0, len(fahrt.Runden)):
         ax.vlines(fahrt.Runden[i].s_pauslinie, [0], [200], lw=2, color='y')
         ax.vlines(fahrt.Runden[i].e_pauslinie, [0], [200], lw=2, color='y')
@@ -192,50 +189,24 @@ if args.plot_pause == 1:
     ax2.set_ylabel('Altitude')
 
     plt.rc('lines', linewidth=2)
-
-    #ax.plot(np.linspace(0,len(cad)/3600,len(cad)),cad,lw=0.5, label = "Cadence")
     ax.plot(fahrt.t_cad, fahrt.cad_t, lw=0.5, label ="Cadence")
     ax.plot(fahrt.t_speed, np.multiply(fahrt.speed_t, skala.speed), label='Speed$\cdot$' + str(skala.speed))
-    #ax.plot(np.linspace(0,len(thf)/3600,len(hft)),hft, label="HF")
     ax.plot(fahrt.thf, fahrt.hft, label="HF")
     ax.plot(fahrt.t_pow, np.multiply(fahrt.pow_t, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
     ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
-    #ax2.plot(np.linspace(0,len(alt)/3600,len(alt)),alt,lw=1)
     if args.plot_hoehe == 1:
         ax2.plot(fahrt.t_alt, fahrt.alt_t, lw=1)
     ax.set_xlim([fahrt.t[0] / 3600, fahrt.t[-1] / 3600])
 
     ax.legend(loc='best')
-    #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
     plt.show()
 
 ############### Critical Power:  ######################################################
-args.CP30 = 0
+CP = CriticalPower(fahrt.power)
 if (args.CP == 1) and any(fahrt.power > 0):
-    steps = 30
-    Int   = [0]*int(max(fahrt.power))
-    Pint  = [0]*int(max(fahrt.power))
-    # Methode 1: schau, wie viele Sekunden über bestimmter Leistung waren, unabhängig, ob zusammenhängendes Intervall
-    for i in range(const.lower_Plimit,len(Pint)):
-        Int[i] = i
-        Pint[i] = len(fahrt.power[fahrt.power > i])
-    # Methode 2: smoothen über Intervalllänge, nimm maximum, d.h. nur zusammenhängende Intervalle werden genommen, aber Durchschnitt
-    steps = 15
-    max_interval = 150*60
-    step_size = int(max_interval/steps)
-    Int2  = [0]*len(range(1,steps+1))
-    Pint2 = [0]*len(range(1,steps+1))
-    Int2[0] = max(fahrt.P30)
-    Pint2[0] = 30 # Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
-    for i in range(1,steps):
-        print('Berechne max. Leistung für %d min (bis %d)...' % (i*step_size/60, max_interval/60), end='\r')
-        Psmooth = smooth(fahrt.power, i * step_size)
-        Int2[i] = max(Psmooth)
-        Pint2[i] = i*step_size# Vergrößere Intervalle um je 5 min (sonst dauerts extrem lange)
-    print('\nFertig!\n')
-    args.CP30 = Int2[3-1]
-    print('CP30 = %d' % args.CP30)
+
+    CP.berechne_kritische_leistung(const, fahrt.power, fahrt.P30)
 
     plt.xkcd()
     fig = plt.figure(figsize=fenster)
@@ -244,8 +215,8 @@ if (args.CP == 1) and any(fahrt.power > 0):
     plt.xlabel('Intervall (min)')
     plt.ylabel('Leistung (W)')
     # ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),np.linspace((const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1))+(const.lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
-    ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),Int[const.lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
-    ax.plot(np.divide(Pint2,60),Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
+    ax.plot(np.divide(CP.Pint[const.lower_Plimit:-1],60),CP.Int[const.lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
+    ax.plot(np.divide(CP.Pint2,60),CP.Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
     ax.legend(loc='best')
 
     plt.show()
@@ -289,7 +260,7 @@ if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
 ############### Print für Tabelle:  ######################################################
 
 rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (fahrt.session.strecke / 1000, fahrt.session.avspeed, fahrt.h, fahrt.m, fahrt.s, fahrt.session.v_max, fahrt.session.kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, fahrt.session.av_hf, fahrt.session.NP, args.CP30, fahrt.session.av_cad, fahrt.session.anstieg, fahrt.session.tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
+rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, fahrt.session.av_hf, fahrt.session.NP, CP.CP30, fahrt.session.av_cad, fahrt.session.anstieg, fahrt.session.tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
 for i in range(0, len(fahrt.Alle)):
     rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (fahrt.Alle[i].x / 1000, fahrt.Alle[i].speed, fahrt.Alle[i].h, fahrt.Alle[i].m, fahrt.Alle[i].s, fahrt.Alle[i].HF, fahrt.Alle[i].power, fahrt.Alle[i].anstieg, fahrt.Alle[i].v_max))
 rstr = rstr.replace('.',',')
