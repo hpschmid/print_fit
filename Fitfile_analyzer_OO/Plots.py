@@ -148,6 +148,39 @@ class Plots:
         ax.set_xlim([0, len(fahrt.speed) / 3600])
         ax.legend(loc='best')
 
+    def uhrzeitplot(self, args, const, skala, fahrt):
+        plt.xkcd()
+        fig = plt.figure(figsize=self.fenster)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.set_prop_cycle(cycler('color', ['c', 'b', 'r', 'm', 'k']))
+        ax.set_title("%s on %s" % (fahrt.session.sport, fahrt.session.startzeit.strftime("%A, %b. %d, %Y")))
+        ax.set_ylim([0,const.max_hf])
+        ax.grid(color='k', linestyle=':', linewidth=1)
+        ax.hlines(const.zonen, [fahrt.t[0] / 3600], [fahrt.t[-1] / 3600], lw=1)
+        for i in range(0, len(fahrt.Runden)):
+            ax.vlines(fahrt.Runden[i].s_pauslinie, [0], [200], lw=2, color='y')
+            ax.vlines(fahrt.Runden[i].e_pauslinie, [0], [200], lw=2, color='y')
+            ax.text(np.mean([fahrt.Runden[i].s_pauslinie, fahrt.Runden[i].e_pauslinie]), 170, ("Runde %d" % (i + 1)), color='y')
+        for i in range(0, len(fahrt.Zwischen)):
+            ax.text(np.mean([fahrt.Zwischen[i].t_start, fahrt.Zwischen[i].t_end]) / 3600, 170, ("Zwischen %d" % (i + 1)), color='y')
+        plt.xlabel('Time (h)')
+        plt.ylabel('Cadence, Speed, HF')
+        ax2 = ax.twinx()
+        ax2.set_prop_cycle(cycler('color', ['k']))
+        ax2.set_ylabel('Altitude')
+
+        plt.rc('lines', linewidth=2)
+        ax.plot(fahrt.t_cad, fahrt.cad_t, lw=0.5, label ="Cadence")
+        ax.plot(fahrt.t_speed, np.multiply(fahrt.speed_t, skala.speed), label='Speed$\cdot$' + str(skala.speed))
+        ax.plot(fahrt.thf, fahrt.hft, label="HF")
+        ax.plot(fahrt.t_pow, np.multiply(fahrt.pow_t, skala.power), label='Power$\cdot$' + str(skala.power), lw=1)
+        ax.plot([-1,-1],[0, 1],lw=1,label = 'Altitude')
+        if args.plot_hoehe == 1:
+            ax2.plot(fahrt.t_alt, fahrt.alt_t, lw=1)
+        ax.set_xlim([fahrt.t[0] / 3600, fahrt.t[-1] / 3600])
+
+        ax.legend(loc='best')
+
     def barplot(self, alle):
         bar_r = np.zeros(len(alle))
         bar_x = np.zeros(len(alle))
@@ -180,5 +213,3 @@ class Plots:
         ax2.bar(bar_r+0.1,bar_p,0.2,lw=2, color="m", label = "Leistung")
         ax2.bar(bar_r+0.3,bar_h,0.2,lw=2, color="grey", label = "Anstieg")
         ax.legend(loc='best')
-
-        plt.show()
