@@ -181,6 +181,19 @@ class Plots:
 
         ax.legend(loc='best')
 
+    def crit_power_plot(self, const, CP):
+        plt.xkcd()
+        fig = plt.figure(figsize=self.fenster)
+        ax = fig.add_subplot(1, 1, 1)
+        ax.grid(color='k', linestyle=':', linewidth=1)
+        plt.xlabel('Intervall (min)')
+        plt.ylabel('Leistung (W)')
+        # ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),np.linspace((const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1))+(const.lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
+        ax.plot(np.divide(CP.Pint[const.lower_Plimit:-1],60),CP.Int[const.lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
+        ax.plot(np.divide(CP.Pint2,60),CP.Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
+        ax.legend(loc='best')
+
+
     def barplot(self, alle):
         bar_r = np.zeros(len(alle))
         bar_x = np.zeros(len(alle))

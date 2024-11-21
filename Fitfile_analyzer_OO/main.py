@@ -10,9 +10,6 @@
 # https://www.perplexity.ai/
 
 from __future__ import division
-import matplotlib.pyplot as plt
-from cycler import cycler
-
 from Konstanten import *
 from Ausfahrt import *
 from Math import *
@@ -25,6 +22,8 @@ args = Argumente()
 args.read_arguments(sys.argv)
 fahrt = Ausfahrt()
 fen1 = fahrt.get_filename(args)
+
+###################################### Files lesen ####################################################
 fahrt.read_all_records()
 
 if args.debug_print == 1:
@@ -65,20 +64,8 @@ if args.plot_pause == 1:
 fenster = [19.5, 10]
 CP = CriticalPower(fahrt.power)
 if (args.CP == 1) and any(fahrt.power > 0):
-
     CP.berechne_kritische_leistung(const, fahrt.power, fahrt.P30)
-
-    plt.xkcd()
-    fig = plt.figure(figsize=fenster)
-    ax = fig.add_subplot(1, 1, 1)
-    ax.grid(color='k', linestyle=':', linewidth=1)
-    plt.xlabel('Intervall (min)')
-    plt.ylabel('Leistung (W)')
-    # ax.plot(np.divide(Pint[const.lower_Plimit:-1],60),np.linspace((const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1),len(Pint)-(const.lower_Plimit + 1))+(const.lower_Plimit + 1),lw=2, color="blue", label = "Critical Power")
-    ax.plot(np.divide(CP.Pint[const.lower_Plimit:-1],60),CP.Int[const.lower_Plimit:-1],lw=2, color="blue", label = "Critical Power, Method 1")
-    ax.plot(np.divide(CP.Pint2,60),CP.Int2,lw=2, color="green", marker='x', label = "Critical Power, Method 2")
-    ax.legend(loc='best')
-
+    zeichnungen.crit_power_plot(const, CP)
     plt.show()
 
 ############### Barplot:            ######################################################
