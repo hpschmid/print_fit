@@ -38,12 +38,6 @@ class Ausfahrt:
         self.t_alt    = []
         self.T        = [] # Temperatur
         self.tT       = []
-        self.h        = 0
-        self.m        = 0
-        self.s        = 0
-        self.hp       = 0
-        self.mp       = 0
-        self.sp       = 0
         self.Pprint   = 0
         self.P30      = 0
 
@@ -214,7 +208,7 @@ class Ausfahrt:
 
     def finde_zwischen_runden(self, schwelle):
         # Check, ob zwischen den Runden > 5 km sind, dann mach eine zusätzliche Runde draus:
-        self.Alle     = self.Runden[:]
+        self.Alle = self.Runden[:]
         i = 0
         a = 0
         if len(self.Runden) > 0:
@@ -278,47 +272,6 @@ class Ausfahrt:
             except:
                 print("Keine Leistung für Zwischenstrecke verfuegbar")
 
-    def lese_zusammenfassung(self):
-        for Summary in self.fitfile.get_messages('session'):
-            print("Zusammenfassung")
-            print("===============")
-            for record_data in Summary:
-                if record_data.name == "total_distance":
-                    self.session.strecke = record_data.value
-                if record_data.name == "avg_speed":
-                    self.session.avspeed = record_data.value*3.6
-                if record_data.name == "total_timer_time":
-                    self.session.zeit = record_data.value
-                if record_data.name == "avg_heart_rate":
-                    self.session.HF = record_data.value
-                if record_data.name == "normalized_power":
-                    self.session.NP = record_data.value
-                if record_data.name == "total_ascent":
-                    self.session.anstieg = record_data.value
-                if record_data.name == "total_discent":
-                    self.session.abstieg = record_data.value
-                if record_data.name == "max_speed":
-                    self.session.v_max = record_data.value*3.6
-                if record_data.name == "total_calories":
-                    self.session.kCal = record_data.value
-                if record_data.name == "total_work":
-                    if record_data.value is not None:
-                        if record_data.value > 0:
-                            self.session.kCal = record_data.value/1000
-                if record_data.name == "total_elapsed_time":
-                    self.session.totalzeit = record_data.value
-                if record_data.name == "avg_cadence":
-                    self.session.kadenz = record_data.value
-                if record_data.name == "start_time":
-                    self.session.startzeit = datetime_to_local(record_data.value)
-                if record_data.name == "sport":
-                    self.session.sport = record_data.value
-                if record_data.units:
-                    print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
-                else:
-                    print(" * %s: %s" % (record_data.name, record_data.value))
-            print()
-
     def filtere_werte(self, const):
         # Replace all 'None' by 0s and calc. mean excluding zeros:
         self.hf    = np.array([e if e is not None else 0 for e in self.hf])
@@ -363,15 +316,6 @@ class Ausfahrt:
         except:
             print("Keine Kadenz verfuegbar")
 
-    def rechne_gesamtzeit(self):
-        self.h = np.floor(self.session.zeit / 3600)
-        self.m = np.floor((self.session.zeit - self.h * 3600) / 60)
-        self.s = self.session.zeit - self.h * 3600 - self.m * 60
-        pausenzeit = self.session.totalzeit - self.session.zeit
-        self.hp = np.floor(pausenzeit/3600)
-        self.mp = np.floor((pausenzeit - self.hp*3600)/60)
-        self.sp = pausenzeit - self.hp*3600 - self.mp*60
-
 class Runde:
     def __init__(self):
         self.x = 0
@@ -401,6 +345,12 @@ class Runde:
 
 class Zusammenfassung:
     def __init__(self):
+        self.h = 0
+        self.m = 0
+        self.s = 0
+        self.hp = 0
+        self.mp = 0
+        self.sp = 0
         self.strecke = 0
         self.avspeed = 0
         self.zeit = 0
@@ -416,3 +366,53 @@ class Zusammenfassung:
         self.sport = 0
         self.av_cad = 0
         self.av_hf = 0
+
+    def lese_zusammenfassung(self, fitfile):
+        for Summary in fitfile.get_messages('session'):
+            print("Zusammenfassung")
+            print("===============")
+            for record_data in Summary:
+                if record_data.name == "total_distance":
+                    self.strecke = record_data.value
+                if record_data.name == "avg_speed":
+                    self.avspeed = record_data.value*3.6
+                if record_data.name == "total_timer_time":
+                    self.zeit = record_data.value
+                if record_data.name == "avg_heart_rate":
+                    self.HF = record_data.value
+                if record_data.name == "normalized_power":
+                    self.NP = record_data.value
+                if record_data.name == "total_ascent":
+                    self.anstieg = record_data.value
+                if record_data.name == "total_discent":
+                    self.abstieg = record_data.value
+                if record_data.name == "max_speed":
+                    self.v_max = record_data.value*3.6
+                if record_data.name == "total_calories":
+                    self.kCal = record_data.value
+                if record_data.name == "total_work":
+                    if record_data.value is not None:
+                        if record_data.value > 0:
+                            self.kCal = record_data.value/1000
+                if record_data.name == "total_elapsed_time":
+                    self.totalzeit = record_data.value
+                if record_data.name == "avg_cadence":
+                    self.kadenz = record_data.value
+                if record_data.name == "start_time":
+                    self.startzeit = datetime_to_local(record_data.value)
+                if record_data.name == "sport":
+                    self.sport = record_data.value
+                if record_data.units:
+                    print(" * %s: %s %s" % (record_data.name, record_data.value, record_data.units))
+                else:
+                    print(" * %s: %s" % (record_data.name, record_data.value))
+            print()
+
+    def rechne_gesamtzeit(self):
+        self.h = np.floor(self.zeit / 3600)
+        self.m = np.floor((self.zeit - self.h * 3600) / 60)
+        self.s = self.zeit - self.h * 3600 - self.m * 60
+        pausenzeit = self.totalzeit - self.zeit
+        self.hp = np.floor(pausenzeit/3600)
+        self.mp = np.floor((pausenzeit - self.hp*3600)/60)
+        self.sp = pausenzeit - self.hp*3600 - self.mp*60

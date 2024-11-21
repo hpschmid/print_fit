@@ -18,6 +18,7 @@ from Konstanten import *
 from Ausfahrt import *
 from Math import *
 from Odometer import *
+from Plots import *
 
 ###################################### Settings ####################################################
 const = Konstanten()
@@ -32,14 +33,14 @@ if args.debug_print == 1:
 
 fahrt.lese_runden()
 fahrt.finde_zwischen_runden(const.schwelle_zwischen)
-fahrt.lese_zusammenfassung()
-fahrt.rechne_gesamtzeit()
+fahrt.session.lese_zusammenfassung(fahrt.fitfile)
+fahrt.session.rechne_gesamtzeit()
 fahrt.filtere_werte(const)
 
 odo = Odometer()
 odo.lese_odometer(fahrt.fitfile)
 
-TB, strZonen = berechne_trainingsbereiche(const, fahrt)
+TB, fahrt.session.strZonen = berechne_trainingsbereiche(const, fahrt)
 skala = Skalen()
 skala.finde_skalierung(fahrt, const, fahrt.Pprint)
 
@@ -257,29 +258,5 @@ if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
 
     plt.show()
 
-############### Print für Tabelle:  ######################################################
-
-rstr = ("%0.2f; %0.1f; %02d:%02d:%02d; %0.1f; %02d" % (fahrt.session.strecke / 1000, fahrt.session.avspeed, fahrt.h, fahrt.m, fahrt.s, fahrt.session.v_max, fahrt.session.kCal))
-rstr = ("%s ; %02d; %02d; %02d; %02d; %02d; %02d; %s %02d:%02d:%02d; %s;;" % (rstr, fahrt.session.av_hf, fahrt.session.NP, CP.CP30, fahrt.session.av_cad, fahrt.session.anstieg, fahrt.session.tss, odo.kmstr, fahrt.hp, fahrt.mp, fahrt.sp, strZonen))
-for i in range(0, len(fahrt.Alle)):
-    rstr = (rstr +" %0.2f; %0.2f; %02d:%02d:%02d; %02d; %02d; %02d; %0.1f;" % (fahrt.Alle[i].x / 1000, fahrt.Alle[i].speed, fahrt.Alle[i].h, fahrt.Alle[i].m, fahrt.Alle[i].s, fahrt.Alle[i].HF, fahrt.Alle[i].power, fahrt.Alle[i].anstieg, fahrt.Alle[i].v_max))
-rstr = rstr.replace('.',',')
-rstr = ("%d.%d.; ;%d;%2d:%2d:%2d;%s" % (fahrt.session.startzeit.day, fahrt.session.startzeit.month, odo.bike_id, fahrt.session.startzeit.hour, fahrt.session.startzeit.minute, fahrt.session.startzeit.second, rstr))
-
-print("Markiere diese Zeile inklusive \">\" und kopiere sie in die Tabelle: ")
-print(rstr)
-print(">")
-
-ueberschrift1 = "Allgemein;;;;;Zusammenfassung;;;;;;;;;;;km-Stand;;;;;;Trainingsbereiche;;;;;;;"
-for i in range(0, len(fahrt.Runden)):
-    ueberschrift1 = (ueberschrift1 + "Runde %d;;;;;;" % (i+1))
-ueberschrift2 = ("Datum;Strecke;Rad;Start;Ges.-km;av;Ges.zeit;max;kCal;Puls;Leistung;CP30;Kad;hm;tss;stress;" + (((str(odo.raeder)).replace(',',';')).replace('(','')).replace(')','') + ";Pausenzeit;TB0;TB1;TB2;TB3;TB4;Anm.;Rad - rep;")
-for i in range(0, len(fahrt.Runden)):
-    ueberschrift2 = (ueberschrift2 + "km;av;Zeit;Puls;Power;hm;max;")
-
-if args.print_csv == 1:
-    file = open(fahrt.csvdatei, "w")
-    file.write(ueberschrift1 + "\r\n")
-    file.write(ueberschrift2 + "\r\n")
-    file.write(rstr)
-    file.close()
+zeile = Text()
+zeile.print_text_f_tabelle(fahrt.session, odo, CP, fahrt.Alle, fahrt.Runden, args.print_csv, fahrt.csvdatei)
