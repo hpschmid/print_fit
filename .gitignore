@@ -14,6 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+.idea/
 lib/
 lib64/
 parts/
@@ -140,3 +141,4 @@ dmypy.json
 !Kopieren.png
 !Einfuegen.png
 /.project
+/Fitfile_analyzer_OO/.idea/

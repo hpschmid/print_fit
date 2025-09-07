@@ -71,6 +71,7 @@ if (args.CP == 1) and any(fahrt.power > 0):
 ############### Barplot:            ######################################################
 if (len(fahrt.Runden) > 0) & (args.plot_bar == 1):
     zeichnungen.barplot(fahrt.Alle)
+    plt.show()
 
 zeile = Text()
 zeile.print_text_f_tabelle(fahrt.session, odo, CP, fahrt.Alle, fahrt.Runden, args.print_csv, fahrt.csvdatei)
