@@ -276,6 +276,8 @@ class Ausfahrt:
         # Replace all 'None' by 0s and calc. mean excluding zeros:
         self.hf    = np.array([e if e is not None else 0 for e in self.hf])
         self.session.av_hf    = np.mean(self.hf[self.hf > 0])
+        if self.session.NP is None:
+            self.session.NP = 0
         if np.isnan(self.session.av_hf):
             self.session.av_hf = 0
         self.cad = np.array([e if e is not None else 0 for e in self.cad])

@@ -15,6 +15,8 @@ from Ausfahrt import *
 from Math import *
 from Odometer import *
 from Plots import *
+import os
+os.chdir("..")
 
 ###################################### Settings ####################################################
 const = Konstanten()
