@@ -88,26 +88,27 @@ class Plots:
         ax.legend(loc='best')
         #ax.legend(('Cadence','Speed$\cdot$'+str(skala.speed),'HF','Altitude'),'best')
 
-        labels = 'TB0','TB1','TB2','TB3','TB4'
-        tb = fahrt.session.TB[0:5]
-        explode = (0.05, 0.05, 0.05, 0.5,1)
-        colors = ['lightskyblue', 'yellowgreen', 'yellow', 'orange', 'lightcoral']
-        axins = inset_axes(ax,
-                  width=1.5,  # width = 30% of parent_bbox
-                  height=1.5,  # height : 1 inch
-                  loc=3)
-        patches, texts, autotexts = plt.pie(tb, explode=explode, colors=colors, labels=labels, startangle=90,
-            autopct='%.0f%%', shadow=True, radius=1)
-        # Make the labels on the small plot easier to read.
-        for te in texts:
-            te.set_size('smaller')
-        for te in autotexts:
-            te.set_size('x-small')
-        autotexts[0].set_color('y')
+        if not all(fahrt.session.TB[0:5] == 0):
+            labels = 'TB0','TB1','TB2','TB3','TB4'
+            tb = fahrt.session.TB[0:5]
+            explode = (0.05, 0.05, 0.05, 0.5,1)
+            colors = ['lightskyblue', 'yellowgreen', 'yellow', 'orange', 'lightcoral']
+            axins = inset_axes(ax,
+                      width=1.5,  # width = 30% of parent_bbox
+                      height=1.5,  # height : 1 inch
+                      loc=3)
+            patches, texts, autotexts = plt.pie(tb, explode=explode, colors=colors, labels=labels, startangle=90,
+                autopct='%.0f%%', shadow=True, radius=1)
+            # Make the labels on the small plot easier to read.
+            for te in texts:
+                te.set_size('smaller')
+            for te in autotexts:
+                te.set_size('x-small')
+            autotexts[0].set_color('y')
 
-        fig.patch.set_alpha(0)
-        ax2.patch.set_alpha(0.5)
-        axins.patch.set_alpha(1)
+            fig.patch.set_alpha(0)
+            ax2.patch.set_alpha(0.5)
+            axins.patch.set_alpha(1)
 
     def zeitplot(self, args, const, skala, fahrt):
         plt.xkcd()
